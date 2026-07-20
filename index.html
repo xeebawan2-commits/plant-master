@@ -342,9 +342,56 @@
             .sub-nav-btn { flex: 1; text-align: center; }
             .header-actions { width: 100%; justify-content: space-between; margin-top: 6px; }
         }
+
+        /* 2026 usability & workflow upgrade */
+        .home-nav-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-bottom:18px; }
+        .home-nav-btn { min-height:76px; padding:14px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border); border-radius:12px; cursor:pointer; text-align:left; font-weight:750; transition:.2s; }
+        .home-nav-btn:hover { border-color:var(--accent-primary); transform:translateY(-2px); background:var(--bg-card-hover); }
+        .home-nav-btn small { display:block; color:var(--text-secondary); font-weight:500; margin-top:5px; }
+        .status-selector { min-width:105px; padding:6px 8px; border-radius:7px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-primary); font-size:11.5px; font-weight:700; }
+        .status-selector.is-failure { color:#ff6b6b; border-color:var(--accent-danger); background:rgba(239,68,68,.12); }
+        .status-selector.is-warning { color:var(--accent-warning); border-color:var(--accent-warning); }
+        .global-nav-actions { display:flex; gap:7px; }
+        .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+        .calendar-cell { min-height:70px; border:1px solid var(--border); border-radius:7px; padding:6px; background:var(--bg-input); font-size:11px; }
+        .calendar-cell.head { min-height:auto; text-align:center; color:var(--text-secondary); font-weight:800; }
+        .calendar-cell.today { border-color:var(--accent-primary); box-shadow:0 0 0 1px var(--accent-primary); }
+        .calendar-cell.muted { opacity:.3; }
+        .attendance-select { min-width:100px; }
+        .completion-details { display:none; margin-top:12px; padding:12px; border-radius:8px; background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.35); }
+        .completion-details p { margin:5px 0; font-size:12px; }
+        @media(max-width:600px){.global-nav-actions span{display:none}.calendar-cell{min-height:48px;padding:4px}.home-nav-grid{grid-template-columns:1fr 1fr}}
+
+        .asset-power-btn { min-width:86px; border:1px solid var(--border); border-radius:999px; padding:6px 10px; cursor:pointer; font-size:11px; font-weight:900; transition:.2s; }
+        .asset-power-btn.on { color:#fff; background:var(--accent-success); border-color:var(--accent-success); box-shadow:0 0 10px rgba(16,185,129,.35); }
+        .asset-power-btn.off { color:var(--text-secondary); background:var(--bg-input); }
+        .asset-card-interactive.asset-off { opacity:.72; }
+        .asset-card-interactive.asset-off:hover { opacity:1; }
+        .manual-operation-note { color:var(--accent-info); font-size:10.5px; font-weight:700; }
+
+        body.app-locked .app-container { visibility:hidden; pointer-events:none; user-select:none; }
+        .login-gate { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,.96); display:flex; align-items:center; justify-content:center; padding:18px; }
+        .login-gate.hidden { display:none; }
+        .login-gate-card { width:100%; max-width:430px; background:var(--bg-card); border:1px solid var(--accent-primary); border-radius:18px; padding:24px; box-shadow:0 0 40px rgba(59,130,246,.28); }
+        .login-gate-logo { width:56px;height:56px;margin:0 auto 14px;border-radius:15px;background:linear-gradient(135deg,var(--accent-primary),var(--accent-info));display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:21px; }
+        .login-gate-error { min-height:20px; color:var(--accent-danger); font-size:12px; font-weight:700; text-align:center; margin-top:8px; }
     </style>
 </head>
-<body>
+<body class="app-locked">
+
+<div id="login-gate" class="login-gate" role="dialog" aria-modal="true" aria-labelledby="login-gate-title">
+    <div class="login-gate-card">
+        <div class="login-gate-logo">PM</div>
+        <h2 id="login-gate-title" style="text-align:center;font-size:21px;margin-bottom:6px;">PlantMaster Pro Login</h2>
+        <p style="text-align:center;color:var(--text-secondary);font-size:12.5px;margin-bottom:18px;">Enter your assigned private PIN to access the application. No page can be opened while the application is locked.</p>
+        <label class="form-label">Private PIN</label>
+        <input id="login-gate-pin" type="password" inputmode="numeric" autocomplete="current-password" class="form-control" placeholder="Enter your assigned PIN" style="font-size:19px;letter-spacing:5px;text-align:center;padding:12px;" onkeydown="if(event.key==='Enter') attemptApplicationLogin()">
+        <div id="login-gate-error" class="login-gate-error"></div>
+        <button class="btn btn-primary" style="width:100%;padding:12px;margin-top:6px;" onclick="attemptApplicationLogin()">🔓 Login Securely</button>
+        <p style="text-align:center;color:var(--text-muted);font-size:10.5px;margin-top:14px;">Contact the Plant Owner or Supervisor if you do not have an assigned PIN.</p>
+    </div>
+</div>
+
 
 <div class="app-container">
     <!-- Sidebar -->
@@ -424,6 +471,13 @@
             </a>
         </nav>
 
+        <div style="padding:10px;border-top:1px solid var(--border);">
+            <div class="nav-category" style="margin-top:0;">Operations Summary</div>
+            <a class="nav-item" onclick="switchTab('asset-detail'); toggleSidebarOnMobile();"><span>🏭 Units <strong id="menu-unit-count" style="margin-left:auto;">22</strong></span></a>
+            <a class="nav-item" onclick="switchTab('email-dispatch'); toggleSidebarOnMobile();"><span>🚨 Alarms <strong id="menu-alarm-count" style="margin-left:auto;color:#ff6b6b;">0</strong></span></a>
+            <a class="nav-item" onclick="switchTab('work-orders'); toggleSidebarOnMobile();"><span>🧰 Tasks <strong id="menu-task-count" style="margin-left:auto;">0</strong></span></a>
+        </div>
+
         <div class="sidebar-footer">
             <span style="font-weight:700; color:#fff;" id="sidebar-owner-name">Owner: Haseeb Awan (Master Lead)</span>
             <span>Supervisor: Abdul Wahid Hussan</span>
@@ -434,6 +488,10 @@
     <div class="main-wrapper">
         <header class="top-header">
             <div class="header-left">
+                <div class="global-nav-actions">
+                    <button class="toggle-menu-btn" onclick="goBack()" title="Go to previous page">← <span>Back</span></button>
+                    <button class="toggle-menu-btn" onclick="switchTab('dashboard')" title="Go to home screen">⌂ <span>Home</span></button>
+                </div>
                 <button class="toggle-menu-btn" onclick="toggleSidebar()" title="Toggle Sidebar Menu">
                     <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                     <span>Menu</span>
@@ -444,6 +502,7 @@
                 </div>
             </div>
             <div class="header-actions">
+                <div id="cloud-sync-indicator" class="header-stat" onclick="switchTab('reports')" title="Open cross-device synchronization settings" style="cursor:pointer;"><span class="badge-pulse" id="cloud-sync-pulse"></span><span id="cloud-sync-text">Local Sync</span></div>
                 <!-- Top login badge NEVER shows PIN publicly -->
                 <div class="security-badge" onclick="openLoginPINModal()" title="Click to Switch User / Login with PIN">
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="color:var(--accent-warning);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -453,6 +512,7 @@
                     <span class="badge-pulse danger" id="overdue-pulse"></span>
                     <span id="overdue-header-count" style="color:#ff6b6b; font-weight:800;">3 Red Marks</span>
                 </div>
+                <button class="btn btn-outline btn-sm" onclick="lockApplication()" title="Lock and require PIN again">🔒 Lock</button>
                 <button class="btn btn-primary btn-sm" onclick="openLogCycleModal()" title="Log Cycles">+ Cycles</button>
             </div>
         </header>
@@ -464,7 +524,7 @@
                     <span style="font-size:22px;">🔴</span>
                     <div>
                         <h4 style="font-size:14px; color:#ff6b6b; font-weight:800; letter-spacing:0.5px;">URGENT ACTION: OVERDUE / RED MARK MAINTENANCE TASKS DETECTED</h4>
-                        <p style="font-size:12px; color:var(--text-primary); margin-top:2px;" id="overdue-banner-text">Husky HyPET 400 #4 (119,850 cycles due), Suction & Resin Filters ('Run Out of Date > 7 Days').</p>
+                        <p style="font-size:12px; color:var(--text-primary); margin-top:2px;" id="overdue-banner-text">Husky HPP5 #4 (119,850 cycles due), Suction & Resin Filters ('Run Out of Date > 7 Days').</p>
                     </div>
                 </div>
                 <div style="display:flex; gap:8px;">
@@ -475,27 +535,20 @@
 
             <!-- TAB 1: PLANT ASSETS HUB (HOME SCREEN LINE BY LINE) -->
             <div id="tab-dashboard" class="tab-content active">
-                <div class="kpi-grid">
-                    <div class="kpi-card blue">
-                        <div class="kpi-header"><span>Total Plant Assets</span><div class="kpi-icon">🏭</div></div>
-                        <div class="kpi-value">22 Units</div>
-                        <div class="kpi-footer"><span style="color:var(--accent-success);">● All 5 Husky & 17 Utilities Monitored</span></div>
-                    </div>
-                    <div class="kpi-card green">
-                        <div class="kpi-header"><span>Husky Mold Health</span><div class="kpi-icon">⚙️</div></div>
-                        <div class="kpi-value">86% Avg</div>
-                        <div class="kpi-footer"><span>120k Cycle PM Tracker Active</span></div>
-                    </div>
-                    <div class="kpi-card red">
-                        <div class="kpi-header"><span>Red Mark Tasks</span><div class="kpi-icon">🚨</div></div>
-                        <div class="kpi-value" id="kpi-red-count" style="color:#ff6b6b;">3 Tasks</div>
-                        <div class="kpi-footer"><span style="color:#ff6b6b;">Filters & Husky #4 Overdue</span></div>
-                    </div>
-                    <div class="kpi-card purple">
-                        <div class="kpi-header"><span>Logged-In Access Power</span><div class="kpi-icon">🔑</div></div>
-                        <div class="kpi-value" style="font-size:18px;" id="kpi-access-power">Master Owner (`Active`)</div>
-                        <div class="kpi-footer"><span style="cursor:pointer; color:var(--accent-warning); text-decoration:underline;" onclick="switchTab('owner-security')">Manage PINs / Workers →</span></div>
-                    </div>
+                <div class="section-header">
+                    <div class="section-title"><h3>Quick Access</h3><p>Open any plant workflow directly from the home screen.</p></div>
+                </div>
+                <div class="home-nav-grid">
+                    <button class="home-nav-btn" onclick="switchTab('checklists-daily')">✅ Daily Checklists<small>Shift A, B and C inspections</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('checklists-weekly')">🧹 Weekly Maintenance<small>Filters and strainers</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('pm-120k')">⚙️ 120k Overhauls<small>Husky preventive maintenance</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('pm-monthly')">🗓 Monthly PM<small>Compressor service</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('work-orders')">🧰 Work Orders<small>Breakdowns and corrective tasks</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('yearly-archive')">🗄 History Lookup<small>Find logs by exact date</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('email-dispatch')">✉ Daily Sign-off<small>Approve and send report</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('roster')">👥 Roster & Attendance<small>Calendar and daily sheet</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('spares')">📦 Spares & Tools<small>Inventory and checkout</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('reports')">📊 Reports & Backup<small>Export, print and restore</small></button>
                 </div>
 
                 <!-- Line 1: Husky Molding Machines (5) -->
@@ -511,7 +564,7 @@
                 <div class="asset-hub-category">
                     <div class="asset-hub-title">
                         <span>Line 2: High-Pressure Air Compressors (PET Blowing Air — 2 Units)</span>
-                        <span class="status-badge info">40 Bar & 7 Bar Main Lines</span>
+                        <span class="status-badge info">10 Bar Plant Air & 7 Bar Control Lines</span>
                     </div>
                     <div class="asset-list-line" id="home-compressor-list"></div>
                 </div>
@@ -545,6 +598,7 @@
                     </div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                         <select id="detail-asset-selector" class="form-control" style="width:220px;" onchange="loadAssetDetails(this.value)"></select>
+                        <button id="detail-power-toggle" class="asset-power-btn off" onclick="toggleAssetPower(selectedAssetId, event)">Shutdown</button>
                         <button class="btn btn-outline btn-sm" onclick="openUniversalEditModal('asset', selectedAssetId)">✏️ Edit Info</button>
                         <button class="btn btn-primary btn-sm" onclick="openLogCycleModal()">+ Log Cycles</button>
                     </div>
@@ -566,6 +620,14 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="card" style="border-left:4px solid var(--accent-info);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <div><h4>📝 Asset Description / Problem & Solution Log</h4><p style="font-size:12px;color:var(--text-secondary);">Persistent notes for this asset, visible to every shift.</p></div>
+                        <button class="btn btn-primary btn-sm" onclick="saveAssetDescription()">Save Asset Note</button>
+                    </div>
+                    <textarea id="asset-description-box" class="form-control" rows="3" style="margin-top:10px;" placeholder="Record the specific problem, diagnosis, action taken, parts used, and solution..."></textarea>
                 </div>
 
                 <div class="card">
@@ -629,6 +691,18 @@
                     </div>
                 </div>
 
+                <div class="card" style="border-left:4px solid var(--accent-purple);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                        <div><h4>Shift Handover Description Boxes</h4><p style="font-size:12px;color:var(--text-secondary);">Dedicated persistent problem/solution notes for every shift.</p></div>
+                        <button class="btn btn-primary btn-sm" onclick="saveShiftDescriptions()">Save Shift Notes</button>
+                    </div>
+                    <div class="shift-submission-grid">
+                        <div><label class="form-label">Shift A Description</label><textarea id="shift-desc-a" class="form-control" rows="3" placeholder="Shift A problem / solution..."></textarea></div>
+                        <div><label class="form-label">Shift B Description</label><textarea id="shift-desc-b" class="form-control" rows="3" placeholder="Shift B problem / solution..."></textarea></div>
+                        <div><label class="form-label">Shift C Description</label><textarea id="shift-desc-c" class="form-control" rows="3" placeholder="Shift C problem / solution..."></textarea></div>
+                    </div>
+                </div>
+
                 <div class="sub-nav">
                     <button class="sub-nav-btn active" onclick="switchChecklistTab('cl-husky-daily', this)">1. Husky Machines (13 Parameters)</button>
                     <button class="sub-nav-btn" onclick="switchChecklistTab('cl-pumps-daily', this)">2. Pumps Daily (10 Units)</button>
@@ -640,8 +714,14 @@
                 <div id="cl-husky-daily" class="checklist-section">
                     <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:8px;">
-                            <h4 style="color:var(--accent-primary);">Husky Preform Molding Machines Shift Verification (HyPET #1 to #5)</h4>
-                            <select class="form-control" style="width:180px;"><option>Husky HyPET 300 #1</option><option>Husky HyPET 300 #2</option><option>Husky HyPET 400 #3</option><option>Husky HyPET 400 #4</option><option>Husky HyPET 500 #5</option></select>
+                            <h4 style="color:var(--accent-primary);">Husky Preform Molding Machines Shift Verification (HPP5 #1 to #5)</h4>
+                            <select id="daily-husky-machine" class="form-control" style="width:180px;"><option>Husky HPP5 #1</option><option>Husky HPP5 #2</option><option>Husky HPP5 #3</option><option>Husky HPP5 #4</option><option>Husky HPP5 #5</option></select>
+                        </div>
+                        <div style="background:var(--bg-input); padding:12px; border-radius:8px; border:1px solid var(--accent-primary); margin-bottom:12px;">
+                            <h5 style="color:var(--accent-primary); margin-bottom:8px;">Required Machine Readings — Manual Entry</h5>
+                            <div class="param-row"><span class="param-label"><strong>1. First Mold Counter:</strong></span><input type="number" id="daily-first-mold-counter" class="form-control" min="0" step="1" placeholder="Enter today's first mold counter" style="width:190px;"></div>
+                            <div class="param-row"><span class="param-label"><strong>2. Running Hours:</strong></span><input type="number" id="daily-running-hours" class="form-control" min="0" step="0.1" placeholder="Manual running hours" style="width:190px;"></div>
+                            <div class="param-row"><span class="param-label"><strong>3. Oil Level:</strong></span><select id="daily-oil-level" class="form-control" style="width:190px;"><option value="Normal">Normal</option><option value="Low">Low</option><option value="High">High</option><option value="Top-up Required">Top-up Required</option></select></div>
                         </div>
                         <div class="grid-2">
                             <div style="background:var(--bg-input); padding:12px; border-radius:8px; border:1px solid var(--border);">
@@ -668,7 +748,7 @@
                             <div style="background:var(--bg-input); padding:12px; border-radius:8px; border:1px solid var(--border);">
                                 <h5 style="color:var(--accent-warning); margin-bottom:8px;">🔍 Pneumatic & Zero-Leakage Sign-off</h5>
                                 <div class="param-row"><span class="param-label">Robot Vacuum Suction Cups:</span><span><label class="checkbox-label"><input type="checkbox" checked> -0.8 Bar / OK</label></span></div>
-                                <div class="param-row"><span class="param-label">Air Pressure (High 40 Bar / Low 7 Bar):</span><span><input type="number" class="form-control" value="40.1" style="width:55px; display:inline;"> / <input type="number" class="form-control" value="7.1" style="width:55px; display:inline;"> Bar</span></div>
+                                <div class="param-row"><span class="param-label">Air Pressure (Plant 10 Bar / Control 7 Bar):</span><span><input type="number" class="form-control" value="10.0" style="width:55px; display:inline;"> / <input type="number" class="form-control" value="7.1" style="width:55px; display:inline;"> Bar</span></div>
                                 <div class="param-row"><span class="param-label">Air, Oil & Water Leakages Inspection:</span><span><label class="checkbox-label" style="color:var(--accent-success);"><input type="checkbox" checked> Zero Leaks</label></span></div>
                             </div>
                         </div>
@@ -687,7 +767,12 @@
                                     <tr><td><strong>CT Pump #2 (110kW)</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="58" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
                                     <tr><td><strong>CT Pump #3 (135kW)</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="59" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
                                     <tr><td><strong>CT Pump #4 (250kW)</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="62" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
-                                    <tr><td><strong>CHW Pumps #1-#6 (35kW)</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> All 6 Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="46" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>Chilled Water Pump 1</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="46" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>Chilled Water Pump 2</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="47" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>Chilled Water Pump 3</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="46" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>Chilled Water Pump 4</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="48" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>Chilled Water Pump 5</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="47" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>Chilled Water Pump 6</strong></td><td><label class="checkbox-label"><input type="checkbox" checked> Smooth</label></td><td><label class="checkbox-label"><input type="checkbox" checked> No Cavitation</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Coupling OK</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Zero Leaks</label></td><td><label class="checkbox-label"><input type="checkbox" checked> Key Tight</label></td><td><input type="number" class="form-control" value="46" style="width:55px; display:inline;"> °C</td><td><span class="status-badge operational">Passed</span></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -717,10 +802,10 @@
                         <h4 style="margin-bottom:12px; color:var(--accent-purple);">Compressors Daily Sound Testing & Parameter Verification (Atlas Copco & I.R.)</h4>
                         <div class="table-container">
                             <table>
-                                <thead><tr><th>Compressor Model</th><th>Acoustic Sound Check</th><th>Discharge Press (40 Bar)</th><th>Oil Sight Glass Level</th><th>Auto-Drain Solenoid</th><th>Amps & Temp</th><th>Status</th></tr></thead>
+                                <thead><tr><th>Compressor Model</th><th>Acoustic Sound Check</th><th>Discharge Press (10 Bar)</th><th>Oil Sight Glass Level</th><th>Auto-Drain Solenoid</th><th>Amps & Temp</th><th>Status</th></tr></thead>
                                 <tbody>
-                                    <tr><td><strong>Atlas Copco GA 75 VSD</strong></td><td><label class="checkbox-label" style="color:var(--accent-success);"><input type="checkbox" checked> Zero Knock</label></td><td><input type="number" class="form-control" value="40.2" style="width:65px; display:inline;"> Bar</td><td><select class="form-control" style="width:110px;"><option>Optimal (3/4)</option><option>Top-up Needed</option></select></td><td><label class="checkbox-label"><input type="checkbox" checked> Draining OK</label></td><td>132A / 82°C</td><td><span class="status-badge operational">Passed</span></td></tr>
-                                    <tr><td><strong>I.R. Sierra 100 Oil-Free</strong></td><td><label class="checkbox-label" style="color:var(--accent-success);"><input type="checkbox" checked> Zero Knock</label></td><td><input type="number" class="form-control" value="39.8" style="width:65px; display:inline;"> Bar</td><td><select class="form-control" style="width:110px;"><option>Optimal (3/4)</option><option>Top-up Needed</option></select></td><td><label class="checkbox-label"><input type="checkbox" checked> Draining OK</label></td><td>168A / 84°C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>Atlas Copco GA 75 VSD</strong></td><td><label class="checkbox-label" style="color:var(--accent-success);"><input type="checkbox" checked> Zero Knock</label></td><td><input type="number" class="form-control" value="10.0" style="width:65px; display:inline;"> Bar</td><td><select class="form-control" style="width:110px;"><option>Optimal (3/4)</option><option>Top-up Needed</option></select></td><td><label class="checkbox-label"><input type="checkbox" checked> Draining OK</label></td><td>132A / 82°C</td><td><span class="status-badge operational">Passed</span></td></tr>
+                                    <tr><td><strong>I.R. Sierra 100 Oil-Free</strong></td><td><label class="checkbox-label" style="color:var(--accent-success);"><input type="checkbox" checked> Zero Knock</label></td><td><input type="number" class="form-control" value="9.8" style="width:65px; display:inline;"> Bar</td><td><select class="form-control" style="width:110px;"><option>Optimal (3/4)</option><option>Top-up Needed</option></select></td><td><label class="checkbox-label"><input type="checkbox" checked> Draining OK</label></td><td>168A / 84°C</td><td><span class="status-badge operational">Passed</span></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -908,6 +993,13 @@
                             </div>
                         </div>
                         <div>
+                            <label class="form-label" style="font-size:11px;">Exact Day / Month / Year</label>
+                            <div style="display:flex;gap:5px;align-items:center;">
+                                <input type="date" id="archive-date-select" class="form-control" style="width:155px;font-weight:700;" onchange="syncArchiveDateFilters(); renderYearlyArchive()">
+                                <button class="btn btn-outline btn-sm" onclick="clearArchiveDate()">Clear</button>
+                            </div>
+                        </div>
+                        <div>
                             <label class="form-label" style="font-size:11px;">Search Description / Remarks</label>
                             <input type="text" id="archive-search-input" class="form-control" placeholder="Search 'vibration', 'leak', 'seal'..." style="width:220px;" onkeyup="renderYearlyArchive()">
                         </div>
@@ -988,6 +1080,11 @@
                         </button>
                     </div>
                 </div>
+                <div id="email-completion-details" class="completion-details">
+                    <p id="approval-paragraph">✅ <strong>Approval:</strong> Engineer approval has been recorded with officer name and timestamp.</p>
+                    <p id="archive-paragraph">🗄 <strong>Archive:</strong> The approved executive summary and current alert snapshot were saved in yearly history.</p>
+                    <p id="dispatch-paragraph">📧 <strong>Dispatch:</strong> The email report was prepared for the configured recipient address(es).</p>
+                </div>
             </div>
 
             <!-- TAB 10: ROSTER & PLANT TEAM (CLEAN NAMES ONLY) -->
@@ -1015,6 +1112,23 @@
                         </table>
                     </div>
                 </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                            <h4>📅 Monthly Roster Calendar</h4>
+                            <input type="month" id="roster-month" class="form-control" style="width:160px;" onchange="renderRosterCalendar()">
+                        </div>
+                        <div id="roster-calendar" class="calendar-grid"></div>
+                    </div>
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                            <div><h4>🧾 Daily Attendance Sheet</h4><p style="font-size:11px;color:var(--text-secondary);">Saved per selected date.</p></div>
+                            <input type="date" id="attendance-date" class="form-control" style="width:155px;" onchange="renderAttendanceSheet()">
+                        </div>
+                        <div class="table-container"><table><thead><tr><th>Employee</th><th>Shift</th><th>Attendance</th></tr></thead><tbody id="attendance-body"></tbody></table></div>
+                        <button class="btn btn-success" style="margin-top:12px;width:100%;" onclick="saveAttendance()">Save Daily Attendance</button>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB 11: SPARES & TOOLS ROOM -->
@@ -1033,11 +1147,14 @@
                 <div id="spares-section" class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:8px;">
                         <h4>Critical Plant Spare Parts Inventory</h4>
-                        <input type="text" class="form-control" placeholder="Search spares by name or part #..." style="width: 240px;" onkeyup="searchSpares(this.value)">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <input type="text" class="form-control" placeholder="Search spares by name or part #..." style="width: 220px;" onkeyup="searchSpares(this.value)">
+                            <button class="btn btn-success btn-sm" onclick="addNewSpare()">＋ Add New Spare</button>
+                        </div>
                     </div>
                     <div class="table-container">
                         <table>
-                            <thead><tr><th>Part Number</th><th>Description & Specification</th><th>Target Asset</th><th>Stock on Hand</th><th>Min Reorder Level</th><th>Unit Price</th><th>Shelf Bin Location</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Part Number</th><th>Description & Specification</th><th>Target Asset</th><th>Stock on Hand</th><th>Min Reorder Level</th><th>Unit Price</th><th>Shelf Bin Location</th><th>Status</th><th>Action</th></tr></thead>
                             <tbody id="spares-table-body"></tbody>
                         </table>
                     </div>
@@ -1046,7 +1163,7 @@
                 <div id="tools-section" class="card" style="display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                         <h4>Precision Tools Room Tracking (Check-Out / Check-In)</h4>
-                        <button class="btn btn-success btn-sm" onclick="requirePermission(() => alert('New precision tool registered to Tools Room.'), 'Register New Tool')">+ Register New Tool</button>
+                        <button class="btn btn-success btn-sm" onclick="addNewTool()">＋ Add New Tool</button>
                     </div>
                     <div class="table-container">
                         <table>
@@ -1055,6 +1172,14 @@
                         </table>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                        <div><h4>📋 Spares & Tools Add / Remove Activity Log</h4><p style="font-size:11px;color:var(--text-secondary);">Every Add New and Removed action is timestamped and synchronized.</p></div>
+                        <button class="btn btn-outline btn-sm" onclick="exportInventoryLogCSV()">Export Log</button>
+                    </div>
+                    <div class="table-container"><table><thead><tr><th>Timestamp</th><th>Action</th><th>Type</th><th>Item</th><th>User</th></tr></thead><tbody id="inventory-log-body"></tbody></table></div>
+                </div>
             </div>
 
             <!-- TAB 13: OWNER PIN MANAGEMENT & SELL APP TRANSFER CENTER (NEW!) -->
@@ -1062,9 +1187,9 @@
                 <div class="section-header">
                     <div class="section-title">
                         <h3 style="color:var(--accent-warning);">👑 Owner Master Security, PIN Assignment & App Transfer Hub</h3>
-                        <p>Master Control Panel protected by Owner PIN `9593` (`Haseeb Awan`). Assign PINs or transfer app ownership.</p>
+                        <p>Master Control Panel protected by private Owner authentication. Assign PINs or transfer app ownership.</p>
                     </div>
-                    <span class="status-badge critical" style="padding:6px 14px; font-size:12px;">🔒 Master Access Required: PIN 9593</span>
+                    <span class="status-badge critical" style="padding:6px 14px; font-size:12px;">🔒 Master Owner Authentication Required</span>
                 </div>
 
                 <div class="grid-2">
@@ -1093,14 +1218,14 @@
                     <div class="card" style="border: 2px solid var(--accent-danger); background: linear-gradient(180deg, rgba(239,68,68,0.08), transparent);">
                         <h4 style="color:#ff6b6b; margin-bottom:12px;">🔄 Transfer App Ownership & Change Master PIN (`Sell App`)</h4>
                         <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
-                            If you sell the plant or transfer this software to a new CEO / Plant Owner, you can change the Master Owner Identity and replace your Master PIN `9593` with the new owner's custom PIN.
+                            If you sell the plant or transfer this software to a new CEO / Plant Owner, you can change the Master Owner Identity and replace the current Master PIN with the new owner's custom PIN.
                         </p>
                         <div class="form-group">
                             <label class="form-label">New Master Owner / CEO Full Name</label>
                             <input type="text" id="transfer-owner-name" class="form-control" placeholder="e.g. Asif Ali Khan (New Plant Owner)" style="font-weight:700;">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">New Master Owner PIN Code (Will Replace `9593`)</label>
+                            <label class="form-label">New Master Owner PIN Code</label>
                             <input type="text" id="transfer-owner-pin" class="form-control" placeholder="e.g. 8899, 1212" maxlength="8" style="font-size:16px; font-weight:800; letter-spacing:3px; color:#ff6b6b;">
                         </div>
                         <button class="btn btn-danger" style="width:100%; justify-content:center; padding:10px; font-weight:800;" onclick="requirePermission(() => executeAppOwnershipTransfer(), 'Transfer Master App Ownership & Reset PIN')">
@@ -1130,6 +1255,34 @@
                         <h3>Plant Data Analytics, Backup & Export Utilities</h3>
                         <p>Export all plant asset cycles, checklist histories, and work orders to JSON/CSV or reset database</p>
                     </div>
+                </div>
+
+                <div class="card" style="border:1px solid var(--accent-info);">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                        <div><h4 style="color:var(--accent-info);">☁ Cross-Device Real-Time Sync</h4><p style="font-size:12px;color:var(--text-secondary);">Connect your own Supabase project. Credentials remain in this browser and are not embedded in the application source.</p></div>
+                        <span id="sync-settings-status" class="status-badge info">Not Configured</span>
+                    </div>
+                    <div class="shift-submission-grid">
+                        <div><label class="form-label">Supabase Project URL</label><input id="sync-project-url" class="form-control" type="url" placeholder="https://your-project.supabase.co"></div>
+                        <div><label class="form-label">Supabase Anon/Public Key</label><input id="sync-anon-key" class="form-control" type="password" placeholder="Paste anon/public key"></div>
+                        <div><label class="form-label">Shared Plant Workspace ID</label><input id="sync-site-id" class="form-control" placeholder="e.g. plant-karachi-main"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="saveCloudSyncSettings()">Connect & Start Real-Time Sync</button>
+                        <button class="btn btn-outline" onclick="testCloudSync()">Test Connection</button>
+                        <button class="btn btn-outline" onclick="copySupabaseSetupSQL()">Copy Setup SQL</button>
+                        <button class="btn btn-danger btn-sm" onclick="disconnectCloudSync()">Disconnect</button>
+                    </div>
+                    <details id="supabase-setup-details" style="margin-top:12px;font-size:11.5px;color:var(--text-secondary);"><summary style="cursor:pointer;color:var(--accent-info);font-weight:700;">Required one-time Supabase table setup</summary><pre style="white-space:pre-wrap;background:var(--bg-input);padding:10px;border-radius:8px;margin-top:8px;">create table if not exists public.plantmaster_sync (
+  site_id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.plantmaster_sync enable row level security;
+create policy "plantmaster read" on public.plantmaster_sync for select to anon using (true);
+create policy "plantmaster insert" on public.plantmaster_sync for insert to anon with check (true);
+create policy "plantmaster update" on public.plantmaster_sync for update to anon using (true) with check (true);
+alter publication supabase_realtime add table public.plantmaster_sync;</pre></details>
                 </div>
 
                 <div class="grid-2">
@@ -1172,15 +1325,13 @@
             <p style="font-size:12px; color:var(--text-secondary);">
                 Enter your unique personal PIN or Master Owner PIN below. Your name will be automatically unlocked and verified.
             </p>
-            <div style="background:var(--bg-input); padding:10px; border-radius:8px; border:1px solid var(--border); font-size:11.5px; display:flex; flex-direction:column; gap:4px;">
-                <span>👑 <strong>Master Owner PIN (`Haseeb Awan`):</strong> <code style="color:var(--accent-info); font-size:13px;" id="current-master-pin-display">9593</code></span>
-                <span>🛡️ <strong>Shift Supervisor (`Abdul Wahid`):</strong> <code style="color:var(--accent-warning); font-size:13px;">1234</code></span>
-                <span>🔧 <strong>Technical Officer PIN:</strong> <code style="color:var(--accent-success); font-size:13px;">5678</code></span>
-                <span>⚙️ <strong>Frontline Techs (Arsalan, etc.):</strong> Enter your assigned PIN code or <code style="color:var(--text-secondary);">0000</code></span>
+            <div style="background:var(--bg-input); padding:10px; border-radius:8px; border:1px solid var(--border); font-size:11.5px;">
+                🔐 Enter your privately assigned credentials. Security identifiers are never displayed on screen.
+                <span id="current-master-pin-display" style="display:none" aria-hidden="true"></span>
             </div>
             <div class="form-group" style="margin:0;">
                 <label class="form-label">Type Your PIN Code Here</label>
-                <input type="password" id="security-pin-input" class="form-control" placeholder="Type PIN (e.g. 9593 or 1001)..." style="font-size:18px; font-weight:800; letter-spacing:4px; text-align:center;" autofocus onkeydown="if(event.key==='Enter') verifySecurityLogin()">
+                <input type="password" id="security-pin-input" class="form-control" placeholder="Enter your private credential..." style="font-size:18px; font-weight:800; letter-spacing:4px; text-align:center;" autofocus onkeydown="if(event.key==='Enter') verifySecurityLogin()">
             </div>
             <div id="security-error-msg" style="color:var(--accent-danger); font-size:12px; font-weight:700; display:none; text-align:center;">
                 ❌ Invalid PIN Code. Access Denied.
@@ -1205,13 +1356,13 @@
                 Confirm authorized modification or removal.
             </p>
             <p style="font-size:12px; color:var(--text-secondary);">
-                To protect plant integrity, please enter Master Owner PIN (`9593`) or Supervisor PIN (`1234`) to grant explicit permission for this action:
+                To protect plant integrity, enter an authorized Owner or Supervisor credential to grant permission for this action:
             </p>
             <div class="form-group" style="margin:0;">
-                <input type="password" id="permission-pin-input" class="form-control" placeholder="Enter PIN 9593 or 1234..." style="font-size:16px; text-align:center; letter-spacing:3px;" autofocus onkeydown="if(event.key==='Enter') confirmPermissionAction()">
+                <input type="password" id="permission-pin-input" class="form-control" placeholder="Enter authorized credential..." style="font-size:16px; text-align:center; letter-spacing:3px;" autofocus onkeydown="if(event.key==='Enter') confirmPermissionAction()">
             </div>
             <div id="permission-error-msg" style="color:var(--accent-danger); font-size:12px; font-weight:700; display:none; text-align:center;">
-                ❌ Unauthorized PIN. Master Owner (`9593`) or Supervisor (`1234`) permission required.
+                ❌ Unauthorized credential. Owner or Supervisor permission is required.
             </div>
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
                 <button class="btn btn-outline" onclick="closeModal('modal-permission')">Cancel</button>
@@ -1265,10 +1416,10 @@
             <div class="form-group">
                 <label class="form-label">Select Target Asset</label>
                 <select id="wo-asset" class="form-control">
-                    <option value="Husky HyPET 300 #1">Husky HyPET 300 #1</option><option value="Husky HyPET 300 #2">Husky HyPET 300 #2</option><option value="Husky HyPET 400 #3">Husky HyPET 400 #3</option><option value="Husky HyPET 400 #4">Husky HyPET 400 #4</option><option value="Husky HyPET 500 #5">Husky HyPET 500 #5</option>
+                    <option value="Husky HPP5 #1">Husky HPP5 #1</option><option value="Husky HPP5 #2">Husky HPP5 #2</option><option value="Husky HPP5 #3">Husky HPP5 #3</option><option value="Husky HPP5 #4">Husky HPP5 #4</option><option value="Husky HPP5 #5">Husky HPP5 #5</option>
                     <option value="Atlas Copco GA 75 VSD">Atlas Copco GA 75 VSD Compressor</option><option value="Ingersoll Rand Sierra 100">Ingersoll Rand Sierra 100 Compressor</option>
                     <option value="Cooling Tower Fan #1 / #2 / #3">Cooling Tower Fans</option><option value="Cooling Tower Pump #1 (75kW)">Cooling Tower Pump #1 (75 kW)</option><option value="Cooling Tower Pump #2 (110kW)">Cooling Tower Pump #2 (110 kW)</option><option value="Cooling Tower Pump #3 (135kW)">Cooling Tower Pump #3 (135 kW)</option><option value="Cooling Tower Pump #4 (250kW)">Cooling Tower Pump #4 (250 kW)</option>
-                    <option value="Broad Absorption Chiller (800 RT)">Broad Absorption Chiller</option><option value="Husky Packaged Chiller (500 RT)">Husky Packaged Chiller</option><option value="CHW Pumps #1 to #6 (35 kW each)">Chilled Water Pumps (35 kW)</option>
+                    <option value="Broad Absorption Chiller (800 RT)">Broad Absorption Chiller</option><option value="Husky Packaged Chiller (500 RT)">Husky Packaged Chiller</option><option value="CHW Pumps #01 to #06 (35 kW each)">Chilled Water Pumps (35 kW)</option>
                 </select>
             </div>
             <div class="form-group">
@@ -1353,7 +1504,7 @@
             <div class="form-group">
                 <label class="form-label">Select Husky Machine</label>
                 <select id="pm-reset-machine" class="form-control">
-                    <option value="0">Husky HyPET 300 #1 (Current: 118,450 cycles)</option><option value="1">Husky HyPET 300 #2 (Current: 64,200 cycles)</option><option value="2">Husky HyPET 400 #3 (Current: 12,100 cycles)</option><option value="3">Husky HyPET 400 #4 (Current: 119,850 cycles - DUE)</option><option value="4">Husky HyPET 500 #5 (Current: 88,500 cycles)</option>
+                    <option value="0">Husky HPP5 #1 (Current: 118,450 cycles)</option><option value="1">Husky HPP5 #2 (Current: 64,200 cycles)</option><option value="2">Husky HPP5 #3 (Current: 12,100 cycles)</option><option value="3">Husky HPP5 #4 (Current: 119,850 cycles - DUE)</option><option value="4">Husky HPP5 #5 (Current: 88,500 cycles)</option>
                 </select>
             </div>
             <div class="form-group">
@@ -1378,46 +1529,46 @@ const defaultData = {
     masterPIN: "9593",
 
     assets: [
-        { id: "HSK-1", name: "Husky HyPET 300 #1", category: "husky", specs: "300 Ton / 72 Cavity Preform Mold • High Speed Cell", cycles: 118450, pmInterval: 120000, lastPMDate: "2026-03-10", status: "warning", motorPower: "180 kW Load", oilCapacity: "850 Liters ISO VG 46" },
-        { id: "HSK-2", name: "Husky HyPET 300 #2", category: "husky", specs: "300 Ton / 72 Cavity Preform Mold • High Speed Cell", cycles: 64200, pmInterval: 120000, lastPMDate: "2026-05-18", status: "operational", motorPower: "180 kW Load", oilCapacity: "850 Liters ISO VG 46" },
-        { id: "HSK-3", name: "Husky HyPET 400 #3", category: "husky", specs: "400 Ton / 96 Cavity Preform Mold • Medium-Heavy Cell", cycles: 12100, pmInterval: 120000, lastPMDate: "2026-07-02", status: "operational", motorPower: "240 kW Load", oilCapacity: "1100 Liters ISO VG 46" },
-        { id: "HSK-4", name: "Husky HyPET 400 #4", category: "husky", specs: "400 Ton / 96 Cavity Preform Mold • Medium-Heavy Cell", cycles: 119850, pmInterval: 120000, lastPMDate: "2026-02-22", status: "critical", motorPower: "240 kW Load", oilCapacity: "1100 Liters ISO VG 46" },
-        { id: "HSK-5", name: "Husky HyPET 500 #5", category: "husky", specs: "500 Ton / 144 Cavity Preform Mold • High Capacity Cell", cycles: 88500, pmInterval: 120000, lastPMDate: "2026-04-12", status: "operational", motorPower: "320 kW Load", oilCapacity: "1400 Liters ISO VG 46" },
+        { id: "HSK-1", name: "Husky HPP5 #1", category: "husky", specs: "HPP5 • 72 Cavity Preform Mold • Manual Daily Counter Operation", cavities: 72, autoRun: false, isOn: false, cycles: 118450, pmInterval: 120000, lastPMDate: "2026-03-10", status: "warning", motorPower: "180 kW Load", oilCapacity: "850 Liters ISO VG 46" },
+        { id: "HSK-2", name: "Husky HPP5 #2", category: "husky", specs: "HPP5 • 72 Cavity Preform Mold • Manual Daily Counter Operation", cavities: 72, autoRun: false, isOn: false, cycles: 64200, pmInterval: 120000, lastPMDate: "2026-05-18", status: "operational", motorPower: "180 kW Load", oilCapacity: "850 Liters ISO VG 46" },
+        { id: "HSK-3", name: "Husky HPP5 #3", category: "husky", specs: "HPP5 • 72 Cavity Preform Mold • Manual Daily Counter Operation", cavities: 72, autoRun: false, isOn: false, cycles: 12100, pmInterval: 120000, lastPMDate: "2026-07-02", status: "operational", motorPower: "240 kW Load", oilCapacity: "1100 Liters ISO VG 46" },
+        { id: "HSK-4", name: "Husky HPP5 #4", category: "husky", specs: "HPP5 • 72 Cavity Preform Mold • Manual Daily Counter Operation", cavities: 72, autoRun: false, isOn: false, cycles: 119850, pmInterval: 120000, lastPMDate: "2026-02-22", status: "critical", motorPower: "240 kW Load", oilCapacity: "1100 Liters ISO VG 46" },
+        { id: "HSK-5", name: "Husky HPP5 #5", category: "husky", specs: "HPP5 • 72 Cavity Preform Mold • Manual Daily Counter Operation", cavities: 72, autoRun: false, isOn: false, cycles: 88500, pmInterval: 120000, lastPMDate: "2026-04-12", status: "operational", motorPower: "320 kW Load", oilCapacity: "1400 Liters ISO VG 46" },
         
-        { id: "CMP-1", name: "Atlas Copco GA 75 VSD", category: "compressor", specs: "75 kW Rotary Screw Air Compressor • 40 Bar PET Blowing Line", status: "operational", note: "Acoustic check OK / Monthly PM due next week", motorPower: "75 kW VSD Drive", oilCapacity: "38 Liters Rotary Oil" },
-        { id: "CMP-2", name: "Ingersoll Rand Sierra 100", category: "compressor", specs: "100 kW Oil-Free Rotary Screw Air Compressor • Plant & PET Air", status: "operational", note: "Sound testing normal / Zero vibration", motorPower: "100 kW Motor", oilCapacity: "45 Liters Gearbox Oil" },
+        { id: "CMP-1", name: "Atlas Copco GA 75 VSD", category: "compressor", specs: "75 kW Rotary Screw Air Compressor • 10 Bar Plant Air Line", status: "operational", note: "Acoustic check OK / Monthly PM due next week", motorPower: "75 kW VSD Drive", oilCapacity: "38 Liters Rotary Oil" },
+        { id: "CMP-2", name: "Ingersoll Rand Sierra 100", category: "compressor", specs: "100 kW Oil-Free Screw Air Compressor • 10 Bar Plant Air Line", status: "operational", note: "Sound testing normal / Zero vibration", motorPower: "100 kW Motor", oilCapacity: "45 Liters Gearbox Oil" },
 
         { id: "CTF-1", name: "Cooling Tower Fan #1 (Cell A)", category: "cooling", specs: "Induced Draft Fan Motor • 15 kW Gear Drive Unit", status: "operational", note: "Belt tension optimal / Basin level normal", motorPower: "15 kW Motor", oilCapacity: "Gearbox Oil 3.5 Liters" },
         { id: "CTF-2", name: "Cooling Tower Fan #2 (Cell B)", category: "cooling", specs: "Induced Draft Fan Motor • 15 kW Gear Drive Unit", status: "operational", note: "Zero bearing whine / Sound tested OK", motorPower: "15 kW Motor", oilCapacity: "Gearbox Oil 3.5 Liters" },
         { id: "CTF-3", name: "Cooling Tower Fan #3 (Cell C)", category: "cooling", specs: "Induced Draft Fan Motor • 15 kW Gear Drive Unit", status: "operational", note: "Belt tension optimal / Vibration normal", motorPower: "15 kW Motor", oilCapacity: "Gearbox Oil 3.5 Liters" },
-        { id: "CTP-1", name: "Cooling Tower Pump #1 (75 kW)", category: "cooling", specs: "75 kW Centrifugal Pump • Chilled Water Return Circuit", status: "operational", note: "Motor & Impeller sound OK / Coupling intact", motorPower: "75 kW Motor", oilCapacity: "Grease Bearings" },
-        { id: "CTP-2", name: "Cooling Tower Pump #2 (110 kW)", category: "cooling", specs: "110 kW Centrifugal Pump • Condenser Water Booster Loop", status: "operational", note: "Motor & Impeller sound OK / Shaft key tight", motorPower: "110 kW Motor", oilCapacity: "Grease Bearings" },
-        { id: "CTP-3", name: "Cooling Tower Pump #3 (135 kW)", category: "cooling", specs: "135 kW Centrifugal Pump • Main Cooling Tower Feed Loop", status: "operational", note: "Housing temp 59°C / Zero seal leaks", motorPower: "135 kW Motor", oilCapacity: "Grease Bearings" },
-        { id: "CTP-4", name: "Cooling Tower Pump #4 (250 kW)", category: "cooling", specs: "250 kW Heavy Duty Pump • High Capacity Plant Main Loop", status: "operational", note: "Motor & Impeller sound OK / Housing temp 62°C", motorPower: "250 kW Heavy Duty", oilCapacity: "Grease Bearings" },
+        { id: "CTP-1", name: "Cooling Tower Pump #1 (75 kW)", category: "cooling", specs: "Provide cooling water for machines.", status: "operational", note: "Motor & Impeller sound OK / Coupling intact", motorPower: "75 kW Motor", oilCapacity: "Grease Bearings" },
+        { id: "CTP-2", name: "Cooling Tower Pump #2 (110 kW)", category: "cooling", specs: "Provide cooling water for machines.", status: "operational", note: "Motor & Impeller sound OK / Shaft key tight", motorPower: "110 kW Motor", oilCapacity: "Grease Bearings" },
+        { id: "CTP-3", name: "Cooling Tower Pump #3 (135 kW)", category: "cooling", specs: "Provide cooling water for machines.", status: "operational", note: "Housing temp 59°C / Zero seal leaks", motorPower: "135 kW Motor", oilCapacity: "Grease Bearings" },
+        { id: "CTP-4", name: "Cooling Tower Pump #4 (250 kW)", category: "cooling", specs: "Provide cooling water for machines.", status: "operational", note: "Motor & Impeller sound OK / Housing temp 62°C", motorPower: "250 kW Heavy Duty", oilCapacity: "Grease Bearings" },
 
         { id: "CHL-1", name: "Broad Absorption Chiller (800 RT)", category: "chiller", specs: "800 RT Absorption Chiller System • Primary CHW", status: "operational", note: "CHW Out: 6.8°C / Vacuum pressure optimal", motorPower: "22 kW Solution Pump", oilCapacity: "Vacuum Purge Unit Active" },
         { id: "CHL-2", name: "Husky Packaged Chiller (500 RT)", category: "chiller", specs: "500 RT Packaged Chiller for Mold Core/Cavity", status: "operational", note: "CHW Out: 7.0°C / R134a pressures normal", motorPower: "320 kW Screw Comp", oilCapacity: "Refrigerant POE Oil 65L" },
-        { id: "CHW-1", name: "Chilled Water Pump #1 (35 kW)", category: "chiller", specs: "35 kW Circulation Pump • Primary Mold Circuit", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
-        { id: "CHW-2", name: "Chilled Water Pump #2 (35 kW)", category: "chiller", specs: "35 kW Circulation Pump • Primary Mold Circuit", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
-        { id: "CHW-3", name: "Chilled Water Pump #3 (35 kW)", category: "chiller", specs: "35 kW Circulation Pump • Secondary Mold Circuit", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
-        { id: "CHW-4", name: "Chilled Water Pump #4 (35 kW)", category: "chiller", specs: "35 kW Circulation Pump • Secondary Mold Circuit", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
-        { id: "CHW-5", name: "Chilled Water Pump #5 (35 kW)", category: "chiller", specs: "35 kW Circulation Pump • Hydraulic Oil Cooling Loop", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
-        { id: "CHW-6", name: "Chilled Water Pump #6 (35 kW)", category: "chiller", specs: "35 kW Circulation Pump • Standby / Auxiliary Loop", status: "operational", note: "Ready Standby / Zero leakage", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" }
+        { id: "CHW-1", name: "Chilled Water Pump #01 (35 kW)", category: "chiller", specs: "Provide chilled water for machines.", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
+        { id: "CHW-2", name: "Chilled Water Pump #02 (35 kW)", category: "chiller", specs: "Provide chilled water for machines.", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
+        { id: "CHW-3", name: "Chilled Water Pump #03 (35 kW)", category: "chiller", specs: "Provide chilled water for machines.", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
+        { id: "CHW-4", name: "Chilled Water Pump #04 (35 kW)", category: "chiller", specs: "Provide chilled water for machines.", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
+        { id: "CHW-5", name: "Chilled Water Pump #05 (35 kW)", category: "chiller", specs: "Provide chilled water for machines.", status: "operational", note: "Sound tested OK / Coupling & key checked", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" },
+        { id: "CHW-6", name: "Chilled Water Pump #06 (35 kW)", category: "chiller", specs: "Provide chilled water for machines.", status: "operational", note: "Ready Standby / Zero leakage", motorPower: "35 kW Motor", oilCapacity: "Mechanical Seal" }
     ],
 
     workOrders: [
-        { id: "WO-104", asset: "Husky HyPET 400 #4", desc: "120,000 Cycle PM mold & clamp overhaul due immediately. Clean cores, neck rings, cavities, cool-pick tubes, and grease linear slides.", assign: "Wali Muhammad", priority: "High", date: "2026-07-18", status: "Open" },
-        { id: "WO-103", asset: "Husky HyPET 300 #1", desc: "Take hydraulic oil sample for ISO lab testing and check tie-bar stretch tonnage before reaching 120k limit.", assign: "M Arsalan", priority: "Medium", date: "2026-07-17", status: "In Progress" },
+        { id: "WO-104", asset: "Husky HPP5 #4", desc: "120,000 Cycle PM mold & clamp overhaul due immediately. Clean cores, neck rings, cavities, cool-pick tubes, and grease linear slides.", assign: "Wali Muhammad", priority: "High", date: "2026-07-18", status: "Open" },
+        { id: "WO-103", asset: "Husky HPP5 #1", desc: "Take hydraulic oil sample for ISO lab testing and check tie-bar stretch tonnage before reaching 120k limit.", assign: "M Arsalan", priority: "Medium", date: "2026-07-17", status: "In Progress" },
         { id: "WO-102", asset: "Cooling Tower Fan #2", desc: "Verify fan belts tension and grease fan bearing blocks.", assign: "Tufail", priority: "Low", date: "2026-07-15", status: "Completed" },
         { id: "WO-101", asset: "Atlas Copco GA 75 VSD", desc: "Inspect auto-drain solenoid on receiver tank and blow out compressor air intake filter.", assign: "Kamran Shehzad", priority: "Medium", date: "2026-07-12", status: "Completed" }
     ],
 
     yearlyArchive: [
-        { id: "ARCH-01", date: "2026-07-18 14:15", shift: "Shift A", tech: "M Arsalan", asset: "Husky HyPET 300 #1", type: "Daily Checklist (Shift A)", desc: "Verified cooling water 28.5°C, robot vacuum -0.8 bar, oil temp 44.2°C. Zero air/oil/water leaks during startup.", supv: "Abdul Wahid Hussan", status: "Passed" },
+        { id: "ARCH-01", date: "2026-07-18 14:15", shift: "Shift A", tech: "M Arsalan", asset: "Husky HPP5 #1", type: "Daily Checklist (Shift A)", desc: "Verified cooling water 28.5°C, robot vacuum -0.8 bar, oil temp 44.2°C. Zero air/oil/water leaks during startup.", supv: "Abdul Wahid Hussan", status: "Passed" },
         { id: "ARCH-02", date: "2026-07-18 06:30", shift: "Shift C", tech: "Tufail", asset: "Cooling Tower Fan #1 (Cell A)", type: "Daily Checklist (Shift C)", desc: "Checked fan drive belt tension. Bearing sound smooth, zero abnormal whine. Basin water level full.", supv: "Abdul Wahid Hussan", status: "Passed" },
-        { id: "ARCH-03", date: "2026-07-17 21:00", shift: "Shift B", tech: "M Danish", asset: "Atlas Copco GA 75 VSD", type: "Daily Checklist (Shift B)", desc: "Sound tested compressor unit: zero abnormal knock. Discharge pressure 40.2 bar on PET line. Oil sight glass level optimal at 3/4.", supv: "M Hassan", status: "Passed" },
+        { id: "ARCH-03", date: "2026-07-17 21:00", shift: "Shift B", tech: "M Danish", asset: "Atlas Copco GA 75 VSD", type: "Daily Checklist (Shift B)", desc: "Sound tested compressor unit: zero abnormal knock. Discharge pressure 10.0 bar on plant air line. Oil sight glass level optimal at 3/4.", supv: "M Hassan", status: "Passed" },
         { id: "ARCH-04", date: "2026-07-17 11:45", shift: "Shift A", tech: "Abdul Wajid", asset: "Cooling Tower Pump #4 (250 kW)", type: "Daily Checklist (Shift A)", desc: "Pump motor and impeller sound tested OK. Coupling and shaft key checked tight. Housing temperature 62°C.", supv: "Abdul Wahid Hussan", status: "Passed" },
-        { id: "ARCH-05", date: "2026-07-16 15:20", shift: "Shift B", tech: "Arsalan Niazi", asset: "Husky HyPET 400 #4", type: "Weekly Filters Schedule", desc: "Cleaned resin hopper suction loader filters and dehumidifier regeneration filters. Logged cycle count at 119,850.", supv: "Abdul Wahid Hussan", status: "Warning / Overhaul Due" },
+        { id: "ARCH-05", date: "2026-07-16 15:20", shift: "Shift B", tech: "Arsalan Niazi", asset: "Husky HPP5 #4", type: "Weekly Filters Schedule", desc: "Cleaned resin hopper suction loader filters and dehumidifier regeneration filters. Logged cycle count at 119,850.", supv: "Abdul Wahid Hussan", status: "Warning / Overhaul Due" },
         { id: "ARCH-06", date: "2026-06-25 09:10", shift: "Shift A", tech: "Wali Muhammad", asset: "Ingersoll Rand Sierra 100", type: "Monthly Compressors PM", desc: "Cleaned inter-cooler and after-cooler matrices with foam. Checked synthetic oil level and replaced primary oil filter element.", supv: "M Hassan", status: "Passed" }
     ],
 
@@ -1443,12 +1594,12 @@ const defaultData = {
     ],
 
     spares: [
-        { part: "HSK-FLT-010", desc: "Husky Hydraulic Return Filter Cartridge 10 Micron", asset: "Husky HyPET Machines", stock: 8, min: 4, cost: "$185", bin: "Shelf A-12", status: "OK" },
-        { part: "HSK-SL-400", desc: "Clamp Cylinder High Pressure Seal Kit (HyPET 400)", asset: "Husky HyPET 400", stock: 2, min: 2, cost: "$1,250", bin: "Shelf A-04", status: "Low Stock" },
+        { part: "HSK-FLT-010", desc: "Husky Hydraulic Return Filter Cartridge 10 Micron", asset: "Husky HPP5 Machines", stock: 8, min: 4, cost: "$185", bin: "Shelf A-12", status: "OK" },
+        { part: "HSK-SL-400", desc: "Clamp Cylinder High Pressure Seal Kit (HPP5)", asset: "Husky HPP5", stock: 2, min: 2, cost: "$1,250", bin: "Shelf A-04", status: "Low Stock" },
         { part: "ATL-SEP-75", desc: "Atlas Copco GA 75 Air/Oil Separator Element", asset: "Atlas Copco GA 75", stock: 3, min: 2, cost: "$420", bin: "Shelf B-08", status: "OK" },
         { part: "IR-FLT-100", desc: "Ingersoll Rand Sierra 100 Air Intake Element", asset: "Ingersoll Rand Sierra", stock: 4, min: 2, cost: "$195", bin: "Shelf B-11", status: "OK" },
         { part: "PMP-SL-250", desc: "Mechanical Shaft Seal for 250 kW Cooling Tower Pump", asset: "Cooling Tower Pump #4", stock: 1, min: 2, cost: "$680", bin: "Shelf C-02", status: "Critical Low" },
-        { part: "PMP-SL-035", desc: "Mechanical Shaft Seal Kit for 35 kW Chilled Water Pump", asset: "CHW Pumps 1-6", stock: 5, min: 3, cost: "$240", bin: "Shelf C-09", status: "OK" }
+        { part: "PMP-SL-035", desc: "Mechanical Shaft Seal Kit for 35 kW Chilled Water Pump", asset: "CHW Pumps 01-06", stock: 5, min: 3, cost: "$240", bin: "Shelf C-09", status: "OK" }
     ],
 
     tools: [
@@ -1514,13 +1665,13 @@ function verifySecurityLogin() {
     const enteredPIN = document.getElementById("security-pin-input").value.trim();
     if (!enteredPIN) return;
 
-    if (enteredPIN === (appData.masterPIN || "9593") || enteredPIN.toUpperCase() === "ADMIN") {
+    if (enteredPIN === (appData.masterPIN || "9593")) {
         currentUserRole = "Owner";
         currentUserName = appData.masterOwnerName || "Haseeb Awan";
         currentUserPIN = enteredPIN;
         updateLoggedInBadge();
         closeModal("modal-security");
-        alert(`🔓 Welcome Master Owner / CEO ${currentUserName}! Master Access (` + enteredPIN + `) granted. All system permissions unlocked.`);
+        alert(`🔓 Welcome Master Owner / CEO ${currentUserName}! Master access granted.`);
         return;
     }
 
@@ -1585,7 +1736,7 @@ function requirePermission(callback, actionDescription) {
 
 function confirmPermissionAction() {
     const enteredPIN = document.getElementById("permission-pin-input").value.trim();
-    if (enteredPIN === (appData.masterPIN || "9593") || enteredPIN === "1234" || enteredPIN.toUpperCase() === "ADMIN") {
+    if (enteredPIN === (appData.masterPIN || "9593") || enteredPIN === "1234") {
         closeModal("modal-permission");
         if (pendingActionCallback) pendingActionCallback();
         pendingActionCallback = null;
@@ -1633,12 +1784,12 @@ function switchTab(tabId) {
     if (tabId === "roster") { titleEl.textContent = "Roster & Plant Team Structure (16 Clean Names)"; subEl.textContent = "Engr. M Hassan, Supervisor Abdul Wahid Hussan, 6 Technical Officers & 8 Technicians"; }
     if (tabId === "spares") { titleEl.textContent = "Spares & Tools Room"; subEl.textContent = "Critical plant spares inventory and precision maintenance tools checkout"; }
     if (tabId === "owner-security") {
-        if (currentUserPIN !== (appData.masterPIN || "9593") && currentUserPIN.toUpperCase() !== "ADMIN") {
-            alert(`⚠️ Master Access Denied: Only Master Owner ${appData.masterOwnerName} (` + (appData.masterPIN || "9593") + `) can access PIN Management & App Transfer! Please log in first.`);
+        if (currentUserPIN !== (appData.masterPIN || "9593")) {
+            alert(`⚠️ Master access denied. Authenticate as ${appData.masterOwnerName} to open PIN Management and App Transfer.`);
             openLoginPINModal();
             return;
         }
-        titleEl.textContent = "👑 Owner Master Security, PIN Assignment & App Transfer Hub"; subEl.textContent = "Assign/Change worker PIN codes or transfer app ownership to a new CEO (`Protected by PIN 9593`)";
+        titleEl.textContent = "👑 Owner Master Security, PIN Assignment & App Transfer Hub"; subEl.textContent = "Assign/Change worker PIN codes or transfer app ownership to a new CEO (Private owner authentication required)";
         renderPINManagementTab();
     }
     if (tabId === "reports") { titleEl.textContent = "Reports & Export Utilities"; subEl.textContent = "Backup database, export CSV/JSON, and print plant audit reports"; }
@@ -1737,7 +1888,7 @@ function executeAppOwnershipTransfer() {
         return;
     }
 
-    if (!confirm(`⚠️ CRITICAL SECURITY CONFIRMATION: Are you sure you want to transfer Master Ownership of this application (` + appData.masterOwnerName + ` -> ` + newOwnerName + `) and change the Master PIN from ` + (appData.masterPIN || "9593") + ` to ` + newMasterPIN + `? You will need ` + newMasterPIN + ` for all future administrative access.`)) {
+    if (!confirm(`⚠️ CRITICAL SECURITY CONFIRMATION: Transfer Master Ownership from ${appData.masterOwnerName} to ${newOwnerName} and replace the private owner credential?`)) {
         return;
     }
 
@@ -1747,7 +1898,7 @@ function executeAppOwnershipTransfer() {
     currentUserPIN = newMasterPIN;
     saveState();
     updateLoggedInBadge();
-    alert(`🎉 App Ownership successfully transferred to Master Owner: ${newOwnerName}! Master PIN is now set to: ${newMasterPIN}`);
+    alert(`🎉 App ownership successfully transferred to Master Owner: ${newOwnerName}. The new private credential was saved securely.`);
     document.getElementById("transfer-owner-name").value = "";
     document.getElementById("transfer-owner-pin").value = "";
     switchTab("dashboard");
@@ -1797,7 +1948,7 @@ function renderHomeLines() {
             let badge = `<span class="status-badge operational">Normal (${pct}%)</span>`;
             let overdueClass = "";
             if (pct >= 90 && pct < 99) badge = `<span class="status-badge warning">PM Due Soon (${pct}%)</span>`;
-            if (pct >= 99) {
+            if (pct >= 99 && !(appData.maintenance?.dismissedAssetAlerts || []).includes(a.id)) {
                 badge = `<span class="status-badge critical">🔴 Overdue / Red Mark (${pct}%)</span>`;
                 overdueClass = "overdue";
             }
@@ -1959,7 +2110,7 @@ function filterAssetHistory() {
             <td style="max-width:280px; font-size:12px; background:rgba(59,130,246,0.05); border-left:3px solid var(--accent-primary); padding:8px;">${item.desc}</td>
             <td style="font-size:12px;">${item.supv}</td>
             <td><span class="status-badge ${item.status.includes('Passed') || item.status.includes('Completed') ? 'operational' : 'warning'}">${item.status}</span></td>
-            <td><button class="btn btn-outline btn-sm" onclick="openUniversalEditModal('archive', ${idx})">✏️ Edit</button></td>
+            <td><button class="btn btn-outline btn-sm" onclick="openUniversalEditModal('archive', '${item.id}')">✏️ Edit</button></td>
         </tr>
     `).join("");
 }
@@ -2066,7 +2217,7 @@ function renderYearlyArchive() {
             <td style="max-width:300px; font-size:12px; background:rgba(255,255,255,0.03); border-left:3px solid var(--accent-primary); padding:8px;">${item.desc}</td>
             <td style="font-size:12px;">${item.supv}</td>
             <td><span class="status-badge ${item.status.includes('Passed') || item.status.includes('Completed') ? 'operational' : 'warning'}">${item.status}</span></td>
-            <td><button class="btn btn-outline btn-sm" onclick="openUniversalEditModal('archive', ${idx})">✏️ Edit</button></td>
+            <td><button class="btn btn-outline btn-sm" onclick="openUniversalEditModal('archive', '${item.id}')">✏️ Edit</button></td>
         </tr>
     `).join("");
 }
@@ -2149,7 +2300,7 @@ EXECUTIVE SUMMARY & EXCEPTIONS:
 ${note}
 
 ACTIVE RED MARK / OVERDUE ALERT STATUS:
-- Husky HyPET 400 #4: Cycle counter at 119,850 (Approaching 120,000 Major Overhaul)
+- Husky HPP5 #4: Cycle counter at 119,850 (Approaching 120,000 Major Overhaul)
 - Weekly Filtration Schedule: Suction Loader & Resin Dryer Filters ('Run Out of Date > 7 Days')
 
 PLANT EQUIPMENT STATUS SUMMARY:
@@ -2177,7 +2328,7 @@ function renderPMTable() {
         const pct = Math.min(100, Math.round((a.cycles / a.pmInterval) * 100));
         let badge = `<span class="status-badge operational">Normal</span>`;
         if (pct >= 90 && pct < 99) badge = `<span class="status-badge warning">Warning (${pct}%)</span>`;
-        if (pct >= 99) badge = `<span class="status-badge critical">🔴 Overdue / Red Mark (${pct}%)</span>`;
+        if (pct >= 99 && !(appData.maintenance?.dismissedAssetAlerts || []).includes(a.id)) badge = `<span class="status-badge critical">🔴 Overdue / Red Mark (${pct}%)</span>`;
 
         return `
             <tr>
@@ -2465,6 +2616,669 @@ function resetFactoryData() {
 
 document.addEventListener("DOMContentLoaded", renderAll);
 renderAll();
+
+
+/* =========================================================
+   2026 WORKFLOW, PERSISTENCE & UI RELIABILITY UPGRADE
+   ========================================================= */
+function localISODate(d = new Date()) {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+}
+function localTimestamp(d = new Date()) { return `${localISODate(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function escapeHTML(value='') { const x=document.createElement('div'); x.textContent=String(value); return x.innerHTML; }
+
+function migrateUpgradeData() {
+    appData.maintenance = appData.maintenance || {};
+    if (!Array.isArray(appData.maintenance.weeklyDue)) appData.maintenance.weeklyDue = ['wf-1','wf-2'];
+    if (!Array.isArray(appData.maintenance.dismissedAssetAlerts)) appData.maintenance.dismissedAssetAlerts = [];
+    appData.shiftDescriptions = appData.shiftDescriptions || { A:'', B:'', C:'' };
+    appData.attendance = appData.attendance || {};
+    appData.assets.forEach(a => {
+        a.description = a.description || '';
+        if (/^CHW-[1-6]$/.test(a.id)) {
+            const n = a.id.split('-')[1].padStart(2,'0');
+            a.name = a.name.replace(/#\d+/, `#${n}`);
+        }
+    });
+    localStorage.setItem("PlantMasterPro_Master9593Data", JSON.stringify(appData));
+}
+migrateUpgradeData();
+
+function installDetailedStatusSelectors() {
+    document.querySelectorAll('#tab-checklists-daily input[type="checkbox"], #tab-checklists-weekly input[type="checkbox"], #tab-pm-monthly input[type="checkbox"]').forEach(cb => {
+        if (cb.dataset.upgraded) return;
+        const select = document.createElement('select');
+        select.className = 'status-selector';
+        if (cb.id) select.id = cb.id;
+        select.dataset.upgraded = 'true';
+        select.innerHTML = ['OK','Not OK','Loose','Abnormal','Normal'].map(v => `<option value="${v}">${v}</option>`).join('');
+        select.value = cb.checked || (cb.id && cb.id.startsWith('wf-') && !(appData.maintenance?.weeklyDue || []).includes(cb.id)) ? 'OK' : 'Not OK';
+        const label = cb.closest('label');
+        if (label) {
+            const labelText = Array.from(label.childNodes).filter(n => n !== cb).map(n => n.textContent).join('').trim();
+            label.replaceWith(select);
+            if (labelText) select.title = labelText;
+        } else cb.replaceWith(select);
+        select.addEventListener('change', () => { styleStatusSelector(select); updateChecklistRow(select); });
+        styleStatusSelector(select);
+        updateChecklistRow(select);
+    });
+}
+function isFailureStatus(v) { return ['Not OK','Loose','Abnormal'].includes(v); }
+function styleStatusSelector(sel) {
+    sel.classList.toggle('is-failure', isFailureStatus(sel.value));
+    sel.classList.toggle('is-warning', sel.value === 'Loose');
+}
+function updateChecklistRow(sel) {
+    const row = sel.closest('tr'); if (!row) return;
+    const badge = row.querySelector('.status-badge'); if (!badge) return;
+    const selectors = [...row.querySelectorAll('.status-selector')];
+    const failed = selectors.some(x => isFailureStatus(x.value));
+    badge.className = `status-badge ${failed ? 'critical' : 'operational'}`;
+    badge.textContent = failed ? 'Failed / Action Required' : 'Passed';
+}
+function getChecklistFailures(scope) {
+    return [...document.querySelectorAll(`${scope} .status-selector`)].filter(x => isFailureStatus(x.value));
+}
+
+// Internal navigation history powers the universal Back button.
+const baseSwitchTab2026 = switchTab;
+let currentTab2026 = 'dashboard';
+let tabHistory2026 = [];
+switchTab = function(tabId, fromBack = false) {
+    if (tabId !== currentTab2026 && !fromBack) tabHistory2026.push(currentTab2026);
+    baseSwitchTab2026(tabId);
+    if (document.getElementById(`tab-${tabId}`)?.classList.contains('active')) currentTab2026 = tabId;
+    if (tabId === 'roster') { renderRosterCalendar(); renderAttendanceSheet(); }
+    document.querySelector('.content-body')?.scrollTo({top:0, behavior:'smooth'});
+};
+function goBack() {
+    const previous = tabHistory2026.pop();
+    switchTab(previous || 'dashboard', true);
+}
+
+function saveAssetDescription() {
+    const asset = appData.assets.find(a => a.id === selectedAssetId); if (!asset) return;
+    asset.description = document.getElementById('asset-description-box').value.trim();
+    saveState();
+    loadAssetDetails(selectedAssetId);
+    alert('Asset problem / solution note saved and synchronized.');
+}
+function saveShiftDescriptions() {
+    appData.shiftDescriptions = {
+        A: document.getElementById('shift-desc-a').value.trim(),
+        B: document.getElementById('shift-desc-b').value.trim(),
+        C: document.getElementById('shift-desc-c').value.trim()
+    };
+    saveState();
+    alert('Shift A, B and C description boxes saved.');
+}
+function loadPersistentDescriptionBoxes() {
+    const box = document.getElementById('asset-description-box');
+    const asset = appData.assets.find(a => a.id === selectedAssetId);
+    if (box && asset) box.value = asset.description || '';
+    const sd = appData.shiftDescriptions || {};
+    if (document.getElementById('shift-desc-a')) document.getElementById('shift-desc-a').value = sd.A || '';
+    if (document.getElementById('shift-desc-b')) document.getElementById('shift-desc-b').value = sd.B || '';
+    if (document.getElementById('shift-desc-c')) document.getElementById('shift-desc-c').value = sd.C || '';
+}
+const baseLoadAssetDetails2026 = loadAssetDetails;
+loadAssetDetails = function(id) { baseLoadAssetDetails2026(id); loadPersistentDescriptionBoxes(); };
+
+function syncArchiveDateFilters() {
+    const value = document.getElementById('archive-date-select').value;
+    if (value) document.getElementById('archive-year-select').value = value.slice(0,4);
+}
+function clearArchiveDate() { document.getElementById('archive-date-select').value=''; renderYearlyArchive(); }
+
+// Exact-date-aware archive rendering and ID-safe edit buttons.
+renderYearlyArchive = function() {
+    const tbody = document.getElementById('yearly-archive-body'); if (!tbody) return;
+    const yearSel = document.getElementById('archive-year-select').value;
+    const shiftSel = document.getElementById('archive-shift-select').value;
+    const assetSel = document.getElementById('archive-asset-select').value;
+    const exactDate = document.getElementById('archive-date-select')?.value || '';
+    const searchVal = document.getElementById('archive-search-input').value.toLowerCase();
+    const filtered = appData.yearlyArchive.filter(item => {
+        const matchDate = exactDate ? item.date.startsWith(exactDate) : (yearSel === 'All' || item.date.startsWith(yearSel));
+        const matchShift = shiftSel === 'All' || item.shift === shiftSel;
+        let matchAsset = true;
+        if (assetSel === 'Husky') matchAsset = item.asset.includes('Husky');
+        else if (assetSel === 'Compressor') matchAsset = /Atlas|Sierra|Compressor/i.test(item.asset);
+        else if (assetSel === 'Cooling') matchAsset = item.asset.includes('Cooling');
+        else if (assetSel === 'Chiller') matchAsset = /Chiller|CHW/i.test(item.asset);
+        const haystack = `${item.desc} ${item.asset} ${item.tech} ${item.type}`.toLowerCase();
+        return matchDate && matchShift && matchAsset && (!searchVal || haystack.includes(searchVal));
+    });
+    document.getElementById('archive-count-badge').textContent = `${filtered.length} Record${filtered.length === 1 ? '' : 's'}`;
+    tbody.innerHTML = filtered.length ? filtered.map(item => `<tr>
+        <td><strong>${escapeHTML(item.date)}</strong></td><td><span class="status-badge operational">${escapeHTML(item.shift)}</span><br><strong>${escapeHTML(item.tech)}</strong></td>
+        <td><strong>${escapeHTML(item.asset)}</strong></td><td><span style="color:var(--accent-info);font-weight:600;">${escapeHTML(item.type)}</span></td>
+        <td style="max-width:300px;border-left:3px solid var(--accent-primary);">${escapeHTML(item.desc)}</td><td>${escapeHTML(item.supv)}</td>
+        <td><span class="status-badge ${/Passed|Completed|Sent|Approved/.test(item.status) ? 'operational':'warning'}">${escapeHTML(item.status)}</span></td>
+        <td><button class="btn btn-outline btn-sm" onclick="openUniversalEditModal('archive','${item.id}')">✏️ Edit</button></td></tr>`).join('') : '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary);">No records match the selected date and filters.</td></tr>';
+};
+
+// Fix filtered-index editing: archive records are now addressed by stable ID.
+const baseOpenUniversalEdit2026 = openUniversalEditModal;
+openUniversalEditModal = function(type, identifier) {
+    if (type !== 'archive') return baseOpenUniversalEdit2026(type, identifier);
+    const actualIndex = appData.yearlyArchive.findIndex(x => x.id === identifier);
+    if (actualIndex < 0 && Number.isInteger(Number(identifier))) return baseOpenUniversalEdit2026(type, Number(identifier));
+    return baseOpenUniversalEdit2026(type, actualIndex);
+};
+const baseSaveUniversalEdit2026 = saveUniversalEdit;
+saveUniversalEdit = function() {
+    baseSaveUniversalEdit2026();
+    populateAssetSelector();
+    if (selectedAssetId) loadAssetDetails(selectedAssetId);
+    renderYearlyArchive();
+};
+
+function checkOverdueRedMarks() {
+    const dismissed = appData.maintenance?.dismissedAssetAlerts || [];
+    const dueHusky = appData.assets.filter(a => a.category === 'husky' && a.cycles >= 118800 && !dismissed.includes(a.id));
+    const weeklyDue = appData.maintenance?.weeklyDue || [];
+    const overdueCount = dueHusky.length + weeklyDue.length;
+    const banner=document.getElementById('overdue-banner'), count=document.getElementById('overdue-header-count'), pulse=document.getElementById('overdue-pulse');
+    if (banner) banner.style.display = overdueCount ? 'flex':'none';
+    if (count) { count.textContent=`${overdueCount} Red Mark${overdueCount===1?'':'s'}`; count.style.color=overdueCount?'#ff6b6b':'var(--accent-success)'; }
+    if (pulse) pulse.classList.toggle('danger', overdueCount > 0);
+    const alarm=document.getElementById('menu-alarm-count'); if(alarm) alarm.textContent=overdueCount;
+    const units=document.getElementById('menu-unit-count'); if(units) units.textContent=appData.assets.length;
+    const tasks=document.getElementById('menu-task-count'); if(tasks) tasks.textContent=appData.workOrders.filter(x=>x.status!=='Completed').length;
+}
+
+// Red marks clear only after a successful, fully acceptable maintenance sign-off.
+submitWeeklyChecklist = function() {
+    const failures = getChecklistFailures('#tab-checklists-weekly');
+    if (failures.length) { alert(`${failures.length} weekly item(s) are Not OK, Loose or Abnormal. Correct them before clearing red marks.`); return; }
+    const shift = document.getElementById('weekly-shift-select').value.match(/Shift [ABC]/)?.[0] || 'Shift A';
+    const tech = document.getElementById('weekly-tech-select').value;
+    const desc = document.getElementById('weekly-desc-box').value.trim() || 'All weekly filters and strainers cleaned, inspected and verified OK.';
+    appData.maintenance.weeklyDue = [];
+    appData.maintenance.weeklyCompletedAt = localTimestamp();
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift,tech,asset:'Filtration & Strainer Circuit',type:'Weekly Filters Schedule',desc,supv:'Abdul Wahid Hussan',status:'Completed'});
+    saveState(); document.getElementById('weekly-desc-box').value='';
+    alert('Weekly maintenance completed. Related red marks were cleared and the log was archived.');
+};
+submitDailyChecklist = function() {
+    const failures=getChecklistFailures('#tab-checklists-daily');
+    const shift=document.getElementById('daily-shift-select').value.match(/Shift [ABC]/)?.[0]||'Shift A';
+    const tech=document.getElementById('daily-tech-select').value, supv=document.getElementById('daily-supv-select').value;
+    let desc=document.getElementById('daily-desc-box').value.trim();
+    if(!desc) desc=failures.length?`${failures.length} detailed status item(s) require corrective action.`:'All inspected items verified OK / Normal.';
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift,tech,asset:'All Plant Equipment (22 Units)',type:`Daily Checklist (${shift})`,desc,supv,status:failures.length?'Attention Required':'Passed'});
+    saveState(); document.getElementById('daily-desc-box').value='';
+    alert(failures.length?'Checklist saved with failures correctly flagged. Green status was not applied.':'Daily checklist saved as passed.');
+};
+submitMonthlyCompressorPM = function() {
+    const failures=getChecklistFailures('#tab-pm-monthly');
+    const shift=document.getElementById('monthly-shift-select').value.match(/Shift [ABC]/)?.[0]||'Shift A';
+    const tech=document.getElementById('monthly-tech-select').value;
+    const desc=document.getElementById('monthly-desc-box').value.trim()||`${failures.length?failures.length+' item(s) need corrective action.':'Monthly compressor service completed; all items OK.'}`;
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift,tech,asset:'Atlas Copco GA 75 & I.R. Sierra 100',type:'Monthly Compressors PM',desc,supv:'M Hassan',status:failures.length?'Attention Required':'Completed'});
+    saveState(); document.getElementById('monthly-desc-box').value='';
+    alert(failures.length?'Monthly PM saved with failures flagged.':'Monthly PM completed and archived.');
+};
+
+toggleWOStatus = function(index) {
+    requirePermission(() => {
+        const wo=appData.workOrders[index]; if(!wo)return;
+        const completing=wo.status!=='Completed';
+        wo.status=completing?'Completed':'In Progress';
+        const asset=appData.assets.find(a=>wo.asset.includes(a.name) || a.name.includes(wo.asset));
+        if(asset && asset.category==='husky') {
+            const list=appData.maintenance.dismissedAssetAlerts || [];
+            appData.maintenance.dismissedAssetAlerts=completing ? [...new Set([...list,asset.id])] : list.filter(id=>id!==asset.id);
+        }
+        saveState();
+    }, 'Change Work Order Status');
+};
+
+const baseConfirmResetPM2026 = confirmResetPM;
+confirmResetPM = function() {
+    const idx=parseInt(document.getElementById('pm-reset-machine').value,10);
+    const target=appData.assets.filter(a=>a.category==='husky')[idx];
+    baseConfirmResetPM2026();
+    if(target) appData.maintenance.dismissedAssetAlerts = (appData.maintenance.dismissedAssetAlerts||[]).filter(id=>id!==target.id);
+    localStorage.setItem("PlantMasterPro_Master9593Data", JSON.stringify(appData)); checkOverdueRedMarks();
+};
+const baseSaveCycles2026 = saveCycleCounts;
+saveCycleCounts = function() {
+    appData.maintenance.dismissedAssetAlerts = [];
+    baseSaveCycles2026();
+};
+
+function showEmailCompletion(kind) {
+    const panel=document.getElementById('email-completion-details'); if(panel) panel.style.display='block';
+    if(kind==='approved') document.getElementById('dispatch-paragraph').style.opacity='.45';
+    if(kind==='sent') document.getElementById('dispatch-paragraph').style.opacity='1';
+}
+confirmDailyStatus = function() {
+    requirePermission(() => {
+        isDailyConfirmed=true;
+        const officer=document.getElementById('email-confirm-officer').value, note=document.getElementById('email-confirm-note').value.trim();
+        document.getElementById('confirm-status-badge').innerHTML=`✓ Digitally Signed & Confirmed by: <strong style="color:var(--accent-success);">${escapeHTML(officer)}</strong> at ${localTimestamp()} PKT`;
+        document.getElementById('confirm-status-badge').style.color='var(--accent-success)';
+        if(!appData.yearlyArchive.some(x=>x.type==='Daily Executive Approval'&&x.date.startsWith(localISODate()))) appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift:'General Shift',tech:officer,asset:'Plant-wide Report',type:'Daily Executive Approval',desc:note||'Daily maintenance report approved.',supv:officer,status:'Approved'});
+        saveState(); showEmailCompletion('approved');
+        alert(`Daily status approved by ${officer}. The three confirmation details are now visible.`);
+    },'Digitally Confirm Daily Plant Maintenance Status');
+};
+dispatch11amReport = function() {
+    if(!isDailyConfirmed && !confirm('This report is not yet approved. Send and acknowledge it anyway?')) return;
+    const targetEmail=document.getElementById('target-owner-email').value.trim();
+    if(!targetEmail){alert('Enter at least one recipient email address.');return;}
+    const officer=document.getElementById('email-confirm-officer').value, note=document.getElementById('email-confirm-note').value;
+    // A sent report acknowledges the displayed alerts, so stale red marks no longer remain on screen.
+    appData.maintenance.weeklyDue=[];
+    appData.maintenance.dismissedAssetAlerts=appData.assets.filter(a=>a.category==='husky'&&a.cycles>=118800).map(a=>a.id);
+    appData.maintenance.lastEmailSentAt=localTimestamp();
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift:'General Shift',tech:officer,asset:'Plant-wide Report',type:'11:00 AM Email Dispatch',desc:`Sent to ${targetEmail}. ${note}`,supv:officer,status:'Sent'});
+    saveState(); document.querySelectorAll('#tab-checklists-weekly .status-selector').forEach(x=>{x.value='OK';styleStatusSelector(x);updateChecklistRow(x);}); showEmailCompletion('sent'); checkOverdueRedMarks();
+    const subject=encodeURIComponent(`[11:00 AM PKT Daily Dispatch] PlantMaster Pro Maintenance Report — ${localISODate()}`);
+    const body=encodeURIComponent(`PLANTMASTER PRO — DAILY EXECUTIVE REPORT\nDate: ${localISODate()}\nVerified by: ${officer}\n\nEXECUTIVE SUMMARY:\n${note}\n\nAll active alerts and shift records are available in the PlantMaster archive.`);
+    setTimeout(()=>{ window.location.href=`mailto:${targetEmail}?subject=${subject}&body=${body}`; },100);
+};
+
+function renderRosterCalendar() {
+    const monthInput=document.getElementById('roster-month'), grid=document.getElementById('roster-calendar'); if(!monthInput||!grid)return;
+    if(!monthInput.value) monthInput.value=localISODate().slice(0,7);
+    const [y,m]=monthInput.value.split('-').map(Number), first=new Date(y,m-1,1), days=new Date(y,m,0).getDate();
+    const heads=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<div class="calendar-cell head">${x}</div>`).join('');
+    let cells=''; for(let i=0;i<first.getDay();i++) cells+='<div class="calendar-cell muted"></div>';
+    for(let d=1;d<=days;d++){const date=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const today=date===localISODate(); const count=Object.keys(appData.attendance?.[date]||{}).length; cells+=`<div class="calendar-cell ${today?'today':''}"><strong>${d}</strong><div style="margin-top:8px;color:var(--text-secondary);">${count?count+' attendance entries':'Roster day'}</div></div>`;}
+    grid.innerHTML=heads+cells;
+}
+function renderAttendanceSheet() {
+    const dateEl=document.getElementById('attendance-date'), body=document.getElementById('attendance-body'); if(!dateEl||!body)return;
+    if(!dateEl.value) dateEl.value=localISODate();
+    const records=appData.attendance?.[dateEl.value]||{};
+    body.innerHTML=appData.staff.map(s=>`<tr><td><strong>${escapeHTML(s.name)}</strong></td><td>${escapeHTML(s.shift.match(/Shift [ABC]|General Shift/)?.[0]||s.shift)}</td><td><select class="form-control attendance-select" data-staff-id="${s.id}"><option ${records[s.id]==='Present'?'selected':''}>Present</option><option ${records[s.id]==='Absent'?'selected':''}>Absent</option><option ${records[s.id]==='Leave'?'selected':''}>Leave</option><option ${records[s.id]==='Late'?'selected':''}>Late</option></select></td></tr>`).join('');
+}
+function saveAttendance() {
+    const date=document.getElementById('attendance-date').value; if(!date)return;
+    appData.attendance[date]={}; document.querySelectorAll('#attendance-body select').forEach(x=>appData.attendance[date][x.dataset.staffId]=x.value);
+    saveState(); renderRosterCalendar(); alert(`Attendance saved for ${date}.`);
+}
+
+const baseRenderAll2026=renderAll;
+renderAll=function(){baseRenderAll2026(); installDetailedStatusSelectors(); loadPersistentDescriptionBoxes(); if(currentTab2026==='roster'){renderRosterCalendar();renderAttendanceSheet();}};
+
+document.addEventListener('DOMContentLoaded', () => {
+    installDetailedStatusSelectors(); loadPersistentDescriptionBoxes();
+    const date=localISODate();
+    const attendance=document.getElementById('attendance-date'); if(attendance) attendance.value=date;
+    const month=document.getElementById('roster-month'); if(month) month.value=date.slice(0,7);
+    renderRosterCalendar(); renderAttendanceSheet(); checkOverdueRedMarks();
+});
+
+
+
+/* =========================================================
+   HPP5 MANUAL OPERATION, STANDARD PUMP DUTIES & ASSET POWER
+   ========================================================= */
+function migrateHPP5AndPumpConfiguration() {
+    appData.assets.forEach(a => {
+        if (a.category === 'husky') {
+            const number = a.id.split('-')[1];
+            a.name = `Husky HPP5 #${number}`;
+            a.specs = 'HPP5 • 72 Cavity Preform Mold • Manual Daily Counter Operation';
+            a.cavities = 72;
+            a.autoRun = false;
+            if (typeof a.isOn !== 'boolean') a.isOn = false;
+        } else {
+            if (typeof a.isOn !== 'boolean') a.isOn = true;
+        }
+        if (a.id === 'CMP-1') a.specs = '75 kW Rotary Screw Air Compressor • 10 Bar Plant Air Line';
+        if (a.id === 'CMP-2') a.specs = '100 kW Oil-Free Screw Air Compressor • 10 Bar Plant Air Line';
+        if (/^CTP-/.test(a.id)) a.specs = 'Provide cooling water for machines.';
+        if (/^CHW-/.test(a.id)) {
+            const n = a.id.split('-')[1].padStart(2,'0');
+            a.name = `Chilled Water Pump #${n} (35 kW)`;
+            a.specs = 'Provide chilled water for machines.';
+        }
+    });
+    // Keep linked records readable after migration from earlier saved versions.
+    const rename = value => String(value || '').replace(/Husky (?:HyPET|HPP5)(?: 300| 400| 500)? #(\d)/g, 'Husky HPP5 #$1');
+    appData.workOrders.forEach(x => x.asset = rename(x.asset));
+    appData.yearlyArchive.forEach(x => x.asset = rename(x.asset));
+    localStorage.setItem('PlantMasterPro_Master9593Data', JSON.stringify(appData));
+}
+migrateHPP5AndPumpConfiguration();
+
+function toggleAssetPower(assetId, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    const asset=appData.assets.find(a=>a.id===assetId); if(!asset)return;
+    asset.isOn=!asset.isOn;
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift:'Manual Control',tech:currentUserName,asset:asset.name,type:'Asset Running/Shutdown Change',desc:`Asset manually switched ${asset.isOn?'Running':'Shutdown'}. No cycle count was changed automatically.`,supv:currentUserName,status:asset.isOn?'Running':'Shutdown'});
+    saveState();
+    if(selectedAssetId===assetId) updateDetailPowerButton();
+}
+function updateDetailPowerButton() {
+    const btn=document.getElementById('detail-power-toggle'), asset=appData.assets.find(a=>a.id===selectedAssetId); if(!btn||!asset)return;
+    btn.textContent=asset.isOn?'Running':'Shutdown';
+    btn.className=`asset-power-btn ${asset.isOn?'on':'off'}`;
+    btn.title=`Manually switch ${asset.name} ${asset.isOn?'Shutdown':'Running'}`;
+}
+function decorateAssetPowerControls() {
+    const groups=[['home-husky-list','husky'],['home-compressor-list','compressor'],['home-cooling-list','cooling'],['home-chiller-list','chiller']];
+    groups.forEach(([containerId,category]) => {
+        const cards=[...document.querySelectorAll(`#${containerId} .asset-card-interactive`)];
+        const assets=appData.assets.filter(a=>a.category===category);
+        cards.forEach((card,i)=>{
+            const asset=assets[i]; if(!asset)return;
+            card.classList.toggle('asset-off',!asset.isOn);
+            const footer=document.createElement('div');
+            footer.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);gap:8px;';
+            footer.innerHTML=`<span class="manual-operation-note">${asset.category==='husky'?'Manual counter only':'Manual operating state'}</span><button class="asset-power-btn ${asset.isOn?'on':'off'}" onclick="toggleAssetPower('${asset.id}', event)">${asset.isOn?'Running':'Shutdown'}</button>`;
+            card.appendChild(footer);
+        });
+    });
+}
+const renderHomeBeforePowerControls = renderHomeLines;
+renderHomeLines = function() { renderHomeBeforePowerControls(); decorateAssetPowerControls(); };
+const loadAssetBeforePowerControl = loadAssetDetails;
+loadAssetDetails = function(id) { loadAssetBeforePowerControl(id); updateDetailPowerButton(); };
+
+// Daily counter values are manual only: there is deliberately no timer, interval or automatic increment.
+const submitDailyBeforeManualCounter = submitDailyChecklist;
+submitDailyChecklist = function() {
+    const machineName=document.getElementById('daily-husky-machine')?.value;
+    const counterRaw=document.getElementById('daily-first-mold-counter')?.value;
+    const hoursRaw=document.getElementById('daily-running-hours')?.value;
+    const oil=document.getElementById('daily-oil-level')?.value || 'Normal';
+    const machine=appData.assets.find(a=>a.name===machineName);
+    const notes=[];
+    if(counterRaw !== '') {
+        const counter=Number(counterRaw);
+        if(!Number.isFinite(counter)||counter<0){alert('Enter a valid non-negative mold counter.');return;}
+        if(machine) { machine.cycles=Math.floor(counter); machine.autoRun=false; const pct=(machine.cycles/machine.pmInterval)*100; machine.status=pct>=99?'critical':(pct>=90?'warning':'operational'); }
+        notes.push(`First mold counter: ${Math.floor(counter)}.`);
+    }
+    if(hoursRaw !== '') {
+        const hours=Number(hoursRaw);
+        if(!Number.isFinite(hours)||hours<0){alert('Enter valid non-negative running hours.');return;}
+        notes.push(`Running hours: ${hours}.`);
+    }
+    notes.push(`Oil level: ${oil}.`);
+    const desc=document.getElementById('daily-desc-box');
+    if(desc && notes.length) desc.value=`${notes.join(' ')} ${desc.value}`.trim();
+    submitDailyBeforeManualCounter();
+};
+
+// Never expose the private owner identifier in badges, rosters, or PIN directories.
+updateLoggedInBadge = function() {
+    const badge=document.getElementById('current-user-badge'), access=document.getElementById('kpi-access-power'), sidebar=document.getElementById('sidebar-owner-name');
+    if(sidebar) sidebar.textContent=`Owner: ${appData.masterOwnerName}`;
+    const labels={Owner:'👑',Supervisor:'🛡️',Officer:'🔧',Technician:'⚙️'};
+    if(badge) badge.textContent=`${labels[currentUserRole]||'⚙️'} ${currentUserName} (${currentUserRole==='Owner'?'Master Owner':currentUserRole})`;
+    if(access) access.textContent=currentUserRole==='Owner'?'Master Owner':`${currentUserName} (${currentUserRole})`;
+    ['daily-tech-select','weekly-tech-select','monthly-tech-select'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=currentUserName;});
+};
+function maskOwnerCredentialsInTables() {
+    document.querySelectorAll('#staff-table-body tr').forEach(row=>{if(row.cells[1]?.textContent.trim()===appData.masterOwnerName){if(row.cells[4])row.cells[4].innerHTML='<code>••••</code>';if(row.cells[7])row.cells[7].innerHTML='<span style="color:var(--text-muted)">Private</span>';}});
+    document.querySelectorAll('#worker-pins-body tr').forEach(row=>{if(row.cells[0]?.textContent.trim()===appData.masterOwnerName){if(row.cells[2])row.cells[2].innerHTML='<code>••••</code>';if(row.cells[4])row.cells[4].innerHTML='<span style="color:var(--text-muted)">Private</span>';}});
+    const sel=document.getElementById('pin-target-worker'); if(sel) [...sel.options].forEach(o=>{if(o.textContent.includes(appData.masterOwnerName)) o.textContent=o.textContent.replace(/Current PIN:.*$/,'Current credential: Hidden');});
+}
+const renderStaffBeforeMask = renderStaff;
+renderStaff = function(filter='all'){renderStaffBeforeMask(filter);maskOwnerCredentialsInTables();};
+const renderPINBeforeMask = renderPINManagementTab;
+renderPINManagementTab = function(){renderPINBeforeMask();maskOwnerCredentialsInTables();};
+
+// Re-render once after all overrides so migrated data and power controls appear immediately.
+renderAll();
+updateDetailPowerButton();
+maskOwnerCredentialsInTables();
+
+
+
+/* =========================================================
+   INVENTORY ACTION LOG + GLOBAL/CROSS-DEVICE DATA SYNC
+   ========================================================= */
+appData.inventoryLog = appData.inventoryLog || [];
+
+function logInventoryAction(action, type, item) {
+    appData.inventoryLog.unshift({timestamp:localTimestamp(),action,type,item,user:currentUserName});
+}
+function addNewSpare() {
+    requirePermission(() => {
+        const part=prompt('New spare part number:'); if(!part)return;
+        const desc=prompt('Description and specification:'); if(!desc)return;
+        const asset=prompt('Target asset:','All Plant Assets') || 'All Plant Assets';
+        const stock=Math.max(0,Number(prompt('Stock quantity:','1'))||0);
+        const min=Math.max(0,Number(prompt('Minimum reorder level:','1'))||0);
+        const cost=prompt('Unit price:','$0') || '$0';
+        const bin=prompt('Shelf/bin location:','Unassigned') || 'Unassigned';
+        appData.spares.push({part:part.trim(),desc:desc.trim(),asset:asset.trim(),stock,min,cost,bin,status:stock<=min?'Low Stock':'OK'});
+        logInventoryAction('Add New','Spare',`${part.trim()} — ${desc.trim()}`);
+        saveState();
+    },'Add New Spare Item');
+}
+function removeSpare(index) {
+    requirePermission(() => {
+        const item=appData.spares[index]; if(!item)return;
+        if(!confirm(`Remove ${item.part} — ${item.desc} from active inventory and log the removal?`))return;
+        logInventoryAction('Removed','Spare',`${item.part} — ${item.desc}`);
+        appData.spares.splice(index,1); saveState();
+    },'Remove Spare Item');
+}
+function addNewTool() {
+    requirePermission(() => {
+        const name=prompt('New tool name and description:'); if(!name)return;
+        const cal=prompt('Calibration status:','Not Required') || 'Not Required';
+        const location=prompt('Tools room shelf/location:','Tools Room Shelf') || 'Tools Room Shelf';
+        const id=`TL-${String(Date.now()).slice(-5)}`;
+        appData.tools.push({id,name:name.trim(),cal:cal.trim(),status:'Available',user:location.trim(),due:'-'});
+        logInventoryAction('Add New','Tool',`${id} — ${name.trim()}`); saveState();
+    },'Add New Tool');
+}
+function removeTool(index) {
+    requirePermission(() => {
+        const item=appData.tools[index]; if(!item)return;
+        if(!confirm(`Remove ${item.id} — ${item.name} and log the removal?`))return;
+        logInventoryAction('Removed','Tool',`${item.id} — ${item.name}`);
+        appData.tools.splice(index,1); saveState();
+    },'Remove Tool');
+}
+renderSpares = function() {
+    const tbody=document.getElementById('spares-table-body'); if(!tbody)return;
+    tbody.innerHTML=appData.spares.map((sp,i)=>{
+        const status=sp.stock<=sp.min?(sp.stock<sp.min?'Critical Low':'Low Stock'):'OK'; sp.status=status;
+        const badge=status==='OK'?'<span class="status-badge operational">Stock OK</span>':(status==='Low Stock'?'<span class="status-badge warning">Reorder Alert</span>':'<span class="status-badge critical">Immediate Order</span>');
+        return `<tr><td><strong>${escapeHTML(sp.part)}</strong></td><td>${escapeHTML(sp.desc)}</td><td>${escapeHTML(sp.asset)}</td><td><strong>${sp.stock} units</strong></td><td>${sp.min} units</td><td>${escapeHTML(sp.cost)}</td><td>${escapeHTML(sp.bin)}</td><td>${badge}</td><td><button class="btn btn-danger btn-sm" onclick="removeSpare(${i})">Removed</button></td></tr>`;
+    }).join('');
+};
+renderTools = function() {
+    const tbody=document.getElementById('tools-table-body'); if(!tbody)return;
+    tbody.innerHTML=appData.tools.map((t,i)=>`<tr><td><strong>${escapeHTML(t.id)}</strong></td><td><strong>${escapeHTML(t.name)}</strong></td><td>${escapeHTML(t.cal)}</td><td><span class="status-badge ${t.status==='Available'?'operational':'warning'}">${escapeHTML(t.status)}</span></td><td>${escapeHTML(t.user)}</td><td>${escapeHTML(t.due)}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="toggleToolStatus(${i})">${t.status==='Available'?'Check Out':'Check In'}</button><button class="btn btn-danger btn-sm" onclick="removeTool(${i})">Removed</button></div></td></tr>`).join('');
+};
+function renderInventoryLog() {
+    const body=document.getElementById('inventory-log-body'); if(!body)return;
+    body.innerHTML=appData.inventoryLog.length?appData.inventoryLog.slice(0,100).map(x=>`<tr><td>${escapeHTML(x.timestamp)}</td><td><span class="status-badge ${x.action==='Add New'?'operational':'critical'}">${escapeHTML(x.action)}</span></td><td>${escapeHTML(x.type)}</td><td>${escapeHTML(x.item)}</td><td>${escapeHTML(x.user)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">No Add New or Removed activity recorded yet.</td></tr>';
+}
+function exportInventoryLogCSV() {
+    let csv='Timestamp,Action,Type,Item,User\n'+appData.inventoryLog.map(x=>[x.timestamp,x.action,x.type,x.item,x.user].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download=`PlantMaster_Inventory_Log_${localISODate()}.csv`; document.body.appendChild(a);a.click();a.remove();
+}
+
+// Preserve asset-name relationships when an asset is renamed in any section.
+let assetNameBeforeEditSync='';
+const openEditBeforeReferenceSync=openUniversalEditModal;
+openUniversalEditModal=function(type,identifier){if(type==='asset'){const a=appData.assets.find(x=>x.id===identifier);assetNameBeforeEditSync=a?.name||'';}return openEditBeforeReferenceSync(type,identifier);};
+const saveEditBeforeReferenceSync=saveUniversalEdit;
+saveUniversalEdit=function(){const id=currentEditType==='asset'?currentEditIndex:null;saveEditBeforeReferenceSync();if(id&&assetNameBeforeEditSync){const a=appData.assets.find(x=>x.id===id);if(a&&a.name!==assetNameBeforeEditSync){appData.workOrders.forEach(x=>{if(x.asset===assetNameBeforeEditSync)x.asset=a.name;});appData.yearlyArchive.forEach(x=>{if(x.asset===assetNameBeforeEditSync)x.asset=a.name;});saveState();}}assetNameBeforeEditSync='';};
+
+const renderAllBeforeInventorySync=renderAll;
+renderAll=function(){renderAllBeforeInventorySync();renderInventoryLog();updateCloudSyncUI();};
+
+/* Supabase REST + Realtime WebSocket. Configuration is entered at runtime. */
+const SYNC_CONFIG_KEY='PlantMasterPro_SupabaseSyncConfig';
+let cloudSyncConfig=JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)||'null');
+let cloudSocket=null, cloudHeartbeat=null, cloudPoller=null, cloudUploadTimer=null;
+let applyingRemoteState=false, lastCloudTimestamp='', syncConnectionState='local';
+const stateChannel=('BroadcastChannel' in window)?new BroadcastChannel('PlantMasterPro_GlobalState'):null;
+
+function normalizedSyncConfig(raw=cloudSyncConfig) {
+    if(!raw)return null;
+    return {url:String(raw.url||'').trim().replace(/\/$/,''),key:String(raw.key||'').trim(),siteId:String(raw.siteId||'').trim()};
+}
+function syncHeaders(extra={}) {return {'apikey':cloudSyncConfig.key,'Authorization':`Bearer ${cloudSyncConfig.key}`,'Content-Type':'application/json',...extra};}
+function syncRowURL(select='data,updated_at'){return `${cloudSyncConfig.url}/rest/v1/plantmaster_sync?site_id=eq.${encodeURIComponent(cloudSyncConfig.siteId)}&select=${select}`;}
+function updateCloudSyncUI(message) {
+    const status=document.getElementById('sync-settings-status'), text=document.getElementById('cloud-sync-text'), pulse=document.getElementById('cloud-sync-pulse');
+    const configured=!!normalizedSyncConfig();
+    const labels={connected:'Real-Time Sync',connecting:'Connecting…',setup:'Sync Setup Required',error:'Sync Error',local:'Local Sync'};
+    if(text)text.textContent=message||labels[syncConnectionState]||'Local Sync';
+    if(pulse){pulse.classList.toggle('danger',syncConnectionState==='error');pulse.style.backgroundColor=syncConnectionState==='connected'?'var(--accent-success)':(syncConnectionState==='error'?'var(--accent-danger)':'var(--accent-warning)');}
+    if(status){status.textContent=configured?(syncConnectionState==='connected'?'Connected':(syncConnectionState==='setup'?'Setup Required':'Configured')):'Not Configured';status.className=`status-badge ${syncConnectionState==='connected'?'operational':(syncConnectionState==='error'?'critical':(syncConnectionState==='setup'?'warning':'info'))}`;}
+    const cfg=normalizedSyncConfig();
+    const url=document.getElementById('sync-project-url'),key=document.getElementById('sync-anon-key'),site=document.getElementById('sync-site-id');
+    if(cfg&&url&&!url.value){url.value=cfg.url;key.value=cfg.key;site.value=cfg.siteId;}
+}
+async function fetchCloudRow() {
+    const r=await fetch(syncRowURL(),{headers:syncHeaders()}); if(!r.ok)throw new Error(`Supabase ${r.status}: ${await r.text()}`);
+    const rows=await r.json(); return rows[0]||null;
+}
+async function pushCloudState() {
+    if(!normalizedSyncConfig()||applyingRemoteState)return;
+    const stamp=new Date().toISOString();
+    try{
+        const r=await fetch(`${cloudSyncConfig.url}/rest/v1/plantmaster_sync?on_conflict=site_id`,{method:'POST',headers:syncHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({site_id:cloudSyncConfig.siteId,data:appData,updated_at:stamp})});
+        if(!r.ok)throw new Error(await r.text()); lastCloudTimestamp=stamp;syncConnectionState='connected';updateCloudSyncUI();
+    }catch(e){console.error('Cloud upload failed',e);syncConnectionState=/PGRST205|plantmaster_sync|schema cache/i.test(e.message)?'setup':'error';updateCloudSyncUI(syncConnectionState==='setup'?'Sync Setup Required':'Sync Error');}
+}
+function scheduleCloudPush(){if(!normalizedSyncConfig()||applyingRemoteState)return;clearTimeout(cloudUploadTimer);cloudUploadTimer=setTimeout(pushCloudState,500);}
+function applyRemoteState(data,stamp='') {
+    if(!data?.assets||!data?.staff||!data?.yearlyArchive)return;
+    if(stamp&&lastCloudTimestamp&&new Date(stamp)<=new Date(lastCloudTimestamp))return;
+    applyingRemoteState=true;appData=data;
+    appData.inventoryLog=appData.inventoryLog||[];
+    migrateHPP5AndPumpConfiguration();
+    localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
+    lastCloudTimestamp=stamp||new Date().toISOString();renderAll();applyingRemoteState=false;
+    document.dispatchEvent(new CustomEvent('plantmaster:statechange',{detail:{source:'remote'}}));
+}
+async function pullCloudState() {
+    if(!normalizedSyncConfig())return;
+    try{const row=await fetchCloudRow();if(row)applyRemoteState(row.data,row.updated_at);else await pushCloudState();syncConnectionState='connected';updateCloudSyncUI();}
+    catch(e){console.error('Cloud download failed',e);syncConnectionState=/PGRST205|plantmaster_sync|schema cache/i.test(e.message)?'setup':'error';updateCloudSyncUI(syncConnectionState==='setup'?'Sync Setup Required':'Sync Error');}
+}
+function closeCloudRealtime(){if(cloudSocket){cloudSocket.onclose=null;cloudSocket.close();cloudSocket=null;}clearInterval(cloudHeartbeat);clearInterval(cloudPoller);}
+function connectCloudRealtime() {
+    closeCloudRealtime(); if(!normalizedSyncConfig())return;
+    syncConnectionState='connecting';updateCloudSyncUI();pullCloudState();
+    try{
+        const wsURL=cloudSyncConfig.url.replace(/^http/,'ws')+`/realtime/v1/websocket?apikey=${encodeURIComponent(cloudSyncConfig.key)}&vsn=1.0.0`;
+        cloudSocket=new WebSocket(wsURL);
+        cloudSocket.onopen=()=>{
+            cloudSocket.send(JSON.stringify({topic:'realtime:public:plantmaster_sync',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[{event:'*',schema:'public',table:'plantmaster_sync',filter:`site_id=eq.${cloudSyncConfig.siteId}`}]}},ref:'1'}));
+            cloudHeartbeat=setInterval(()=>{if(cloudSocket?.readyState===1)cloudSocket.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(Date.now())}));},25000);
+            syncConnectionState='connected';updateCloudSyncUI();
+        };
+        cloudSocket.onmessage=e=>{try{const msg=JSON.parse(e.data);const record=msg.payload?.data?.record||msg.payload?.record;if(record?.site_id===cloudSyncConfig.siteId)applyRemoteState(record.data,record.updated_at);}catch(err){console.warn(err);}};
+        cloudSocket.onerror=()=>{syncConnectionState='error';updateCloudSyncUI('Realtime Reconnecting');};
+        cloudSocket.onclose=()=>{if(normalizedSyncConfig())setTimeout(connectCloudRealtime,3000);};
+    }catch(e){console.error(e);}
+    // Polling is a fallback if Realtime replication is not enabled.
+    cloudPoller=setInterval(pullCloudState,5000);
+}
+function saveCloudSyncSettings() {
+    const raw={url:document.getElementById('sync-project-url').value,key:document.getElementById('sync-anon-key').value,siteId:document.getElementById('sync-site-id').value};
+    const cfg=normalizedSyncConfig(raw);if(!cfg?.url||!cfg?.key||!cfg?.siteId){alert('Enter the Supabase Project URL, anon/public key and shared workspace ID.');return;}
+    cloudSyncConfig=cfg;localStorage.setItem(SYNC_CONFIG_KEY,JSON.stringify(cfg));connectCloudRealtime();alert('Cross-device synchronization configured. Use the same settings and Workspace ID on every device.');
+}
+async function testCloudSync(){if(!normalizedSyncConfig()){alert('Save the synchronization settings first.');return;}try{await fetchCloudRow();alert('Supabase connection successful.');}catch(e){alert(`Connection failed: ${e.message}`);}}
+function disconnectCloudSync(){if(!confirm('Disconnect this device from cross-device synchronization?'))return;closeCloudRealtime();localStorage.removeItem(SYNC_CONFIG_KEY);cloudSyncConfig=null;syncConnectionState='local';['sync-project-url','sync-anon-key','sync-site-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});updateCloudSyncUI();}
+
+// All state-changing actions pass through here, updating every section, browser tab, and configured device.
+const saveStateBeforeCrossDeviceSync=saveState;
+saveState=function(){saveStateBeforeCrossDeviceSync();renderInventoryLog();document.dispatchEvent(new CustomEvent('plantmaster:statechange',{detail:{source:'local'}}));if(stateChannel)stateChannel.postMessage({data:appData,stamp:new Date().toISOString()});scheduleCloudPush();};
+if(stateChannel)stateChannel.onmessage=e=>{if(e.data?.data)applyRemoteState(e.data.data,e.data.stamp);};
+
+document.addEventListener('DOMContentLoaded',()=>{renderInventoryLog();updateCloudSyncUI();if(normalizedSyncConfig())connectCloudRealtime();});
+renderAll();
+
+
+
+/* =========================================================
+   MANDATORY STARTUP PIN GATE + FRIENDLY SYNC SETUP HANDLING
+   ========================================================= */
+window.appUnlocked=false;
+currentUserRole='Locked';currentUserName='Locked';currentUserPIN='';
+
+function attemptApplicationLogin() {
+    const input=document.getElementById('login-gate-pin'),error=document.getElementById('login-gate-error');
+    const pin=input.value.trim(); error.textContent='';
+    if(!pin){error.textContent='Enter your assigned PIN.';input.focus();return;}
+    if(pin===(appData.masterPIN||'')) {
+        currentUserRole='Owner';currentUserName=appData.masterOwnerName;currentUserPIN=pin;
+        completeApplicationUnlock();return;
+    }
+    const staff=appData.staff.find(s=>s.pin&&s.pin===pin);
+    if(!staff){input.value='';error.textContent='Invalid PIN. Access denied.';input.focus();return;}
+    currentUserName=staff.name;currentUserPIN=pin;
+    currentUserRole=(staff.role==='Engineer'||staff.role==='Supervisor')?'Supervisor':(staff.role==='Technical Officer'?'Officer':'Technician');
+    completeApplicationUnlock();
+}
+function completeApplicationUnlock() {
+    window.appUnlocked=true;
+    document.body.classList.remove('app-locked');
+    document.getElementById('login-gate').classList.add('hidden');
+    document.getElementById('login-gate-pin').value='';
+    updateLoggedInBadge();renderAll();
+    if(normalizedSyncConfig()) connectCloudRealtime();
+}
+function lockApplication() {
+    window.appUnlocked=false;currentUserRole='Locked';currentUserName='Locked';currentUserPIN='';
+    closeCloudRealtime();
+    document.querySelectorAll('.modal-overlay.active').forEach(x=>x.classList.remove('active'));
+    document.body.classList.add('app-locked');
+    const gate=document.getElementById('login-gate');gate.classList.remove('hidden');
+    const input=document.getElementById('login-gate-pin');input.value='';
+    document.getElementById('login-gate-error').textContent='';
+    updateLoggedInBadge();setTimeout(()=>input.focus(),50);
+}
+// Do not download plant data or open realtime channels before successful PIN entry.
+const connectCloudBeforePinGate=connectCloudRealtime;
+connectCloudRealtime=function(){if(!window.appUnlocked)return;connectCloudBeforePinGate();};
+
+const SUPABASE_SETUP_SQL=`create table if not exists public.plantmaster_sync (
+  site_id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.plantmaster_sync enable row level security;
+create policy "plantmaster read" on public.plantmaster_sync for select to anon using (true);
+create policy "plantmaster insert" on public.plantmaster_sync for insert to anon with check (true);
+create policy "plantmaster update" on public.plantmaster_sync for update to anon using (true) with check (true);
+alter publication supabase_realtime add table public.plantmaster_sync;`;
+function showSupabaseSetupRequired() {
+    syncConnectionState='setup';updateCloudSyncUI('Sync Setup Required');
+    const details=document.getElementById('supabase-setup-details');if(details)details.open=true;
+    const status=document.getElementById('sync-settings-status');if(status){status.textContent='Setup Required';status.className='status-badge warning';}
+}
+async function copySupabaseSetupSQL() {
+    try{await navigator.clipboard.writeText(SUPABASE_SETUP_SQL);alert('Setup SQL copied. Open Supabase → SQL Editor, paste it, and click Run. Then return and press Test Connection.');}
+    catch(e){prompt('Copy this SQL and run it in Supabase SQL Editor:',SUPABASE_SETUP_SQL);}
+}
+testCloudSync=async function(){
+    if(!normalizedSyncConfig()){alert('Enter and save the Supabase settings first.');return;}
+    try{await fetchCloudRow();syncConnectionState='connected';updateCloudSyncUI();alert('Supabase connection successful. Cross-device synchronization is active.');}
+    catch(e){
+        if(/PGRST205|plantmaster_sync|schema cache/i.test(e.message)){showSupabaseSetupRequired();alert('Supabase is connected, but the required plantmaster_sync table has not been created. Expand “Required one-time Supabase table setup”, copy the SQL, and run it once in the Supabase SQL Editor.');}
+        else{syncConnectionState='error';updateCloudSyncUI('Sync Error');alert('Could not connect to Supabase. Check the Project URL and anon/public key.');}
+    }
+};
+
+// Always start locked on every page load; no remembered session bypass is used.
+document.body.classList.add('app-locked');
+document.getElementById('login-gate').classList.remove('hidden');
+updateLoggedInBadge();
+setTimeout(()=>document.getElementById('login-gate-pin')?.focus(),100);
+
 </script>
 </body>
 </html>
