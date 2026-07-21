@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PlantMaster Pro | Pure Black OLED CMMS & Master Security</title>
+    <meta name="application-name" content="PlantMaster Pro">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PlantMaster Pro">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <style>
         :root[data-theme="dark"] {
             --bg-main: #000000;
@@ -375,6 +384,20 @@
         .login-gate-card { width:100%; max-width:430px; background:var(--bg-card); border:1px solid var(--accent-primary); border-radius:18px; padding:24px; box-shadow:0 0 40px rgba(59,130,246,.28); }
         .login-gate-logo { width:56px;height:56px;margin:0 auto 14px;border-radius:15px;background:linear-gradient(135deg,var(--accent-primary),var(--accent-info));display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:21px; }
         .login-gate-error { min-height:20px; color:var(--accent-danger); font-size:12px; font-weight:700; text-align:center; margin-top:8px; }
+
+        .asset-description-inline { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+        .asset-description-inline textarea { min-height:64px; resize:vertical; }
+        .save-route { margin-top:5px; font-size:10px; color:var(--accent-info); }
+        .description-timeline { margin-top:10px; display:flex; flex-direction:column; gap:7px; }
+        .description-entry { padding:8px; border-radius:7px; border:1px solid var(--border); background:var(--bg-input); font-size:11.5px; }
+        .save-destination-toast { position:fixed; right:16px; bottom:16px; z-index:20000; max-width:390px; padding:12px 15px; border-radius:10px; color:#fff; background:linear-gradient(135deg,#2563eb,#0891b2); box-shadow:0 10px 30px rgba(0,0,0,.5); font-size:12px; font-weight:700; opacity:0; transform:translateY(16px); pointer-events:none; transition:.25s; }
+        .save-destination-toast.show { opacity:1; transform:translateY(0); }
+        .owner-only-disabled { opacity:.45!important; cursor:not-allowed!important; }
+
+        .table-export-bar { display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
+        .module-export-card { padding:11px; border:1px solid var(--border); border-radius:9px; background:var(--bg-input); }
+        .module-export-card strong { display:block; margin-bottom:7px; }
+        .shift-admin-select { min-width:190px; }
     </style>
 </head>
 <body class="app-locked">
@@ -469,6 +492,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                 <span>Reports & Export</span>
             </a>
+            <a class="nav-item" onclick="switchTab('sync'); toggleSidebarOnMobile();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 0 0-15.5-2M4 4v6h6"></path><path d="M4 12a8 8 0 0 0 15.5 2M20 20v-6h-6"></path></svg>
+                <span>Cross-Device Sync</span>
+            </a>
         </nav>
 
         <div style="padding:10px;border-top:1px solid var(--border);">
@@ -502,7 +529,7 @@
                 </div>
             </div>
             <div class="header-actions">
-                <div id="cloud-sync-indicator" class="header-stat" onclick="switchTab('reports')" title="Open cross-device synchronization settings" style="cursor:pointer;"><span class="badge-pulse" id="cloud-sync-pulse"></span><span id="cloud-sync-text">Local Sync</span></div>
+                <div id="cloud-sync-indicator" class="header-stat" onclick="switchTab('sync')" title="Open cross-device synchronization settings" style="cursor:pointer;"><span class="badge-pulse" id="cloud-sync-pulse"></span><span id="cloud-sync-text">Local Sync</span></div>
                 <!-- Top login badge NEVER shows PIN publicly -->
                 <div class="security-badge" onclick="openLoginPINModal()" title="Click to Switch User / Login with PIN">
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="color:var(--accent-warning);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -512,6 +539,7 @@
                     <span class="badge-pulse danger" id="overdue-pulse"></span>
                     <span id="overdue-header-count" style="color:#ff6b6b; font-weight:800;">3 Red Marks</span>
                 </div>
+                <button id="pwa-install-button" class="btn btn-success btn-sm" onclick="installPlantMasterPWA()" style="display:none;" title="Install PlantMaster Pro on this device">⬇ Install App</button>
                 <button class="btn btn-outline btn-sm" onclick="lockApplication()" title="Lock and require PIN again">🔒 Lock</button>
                 <button class="btn btn-primary btn-sm" onclick="openLogCycleModal()" title="Log Cycles">+ Cycles</button>
             </div>
@@ -536,7 +564,7 @@
             <!-- TAB 1: PLANT ASSETS HUB (HOME SCREEN LINE BY LINE) -->
             <div id="tab-dashboard" class="tab-content active">
                 <div class="section-header">
-                    <div class="section-title"><h3>Quick Access</h3><p>Open any plant workflow directly from the home screen.</p></div>
+                    <div class="section-title"><h3>Quick Access</h3><p>Open any plant workflow directly from the home screen.</p></div><div style="display:flex;gap:6px;"><select id="dashboard-all-format" class="form-control" style="width:105px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-success btn-sm" onclick="downloadAllMerged(document.getElementById('dashboard-all-format').value)">⬇ Download All</button></div>
                 </div>
                 <div class="home-nav-grid">
                     <button class="home-nav-btn" onclick="switchTab('checklists-daily')">✅ Daily Checklists<small>Shift A, B and C inspections</small></button>
@@ -638,7 +666,7 @@
                                 <option value="All">All Years</option><option value="2026" selected>2026</option><option value="2025">2025</option><option value="2024">2024</option>
                             </select>
                             <select class="form-control" style="width:115px;" id="detail-shift-filter" onchange="filterAssetHistory()">
-                                <option value="All">All Shifts</option><option value="Shift A">Shift A</option><option value="Shift B">Shift B</option><option value="Shift C">Shift C</option>
+                                <option value="All">All Shifts</option><option value="General Shift">General Shift</option><option value="Shift A">Shift A</option><option value="Shift B">Shift B</option><option value="Shift C">Shift C</option>
                             </select>
                         </div>
                     </div>
@@ -670,9 +698,10 @@
                         <div>
                             <label class="form-label">Select Duty Shift</label>
                             <select id="daily-shift-select" class="form-control" style="font-weight:700; color:var(--accent-info);">
-                                <option value="Shift A (Morning 06:00 - 14:00)">Shift A (Morning Crew: 06:00 - 14:00)</option>
-                                <option value="Shift B (Evening 14:00 - 22:00)">Shift B (Evening Crew: 14:00 - 22:00)</option>
-                                <option value="Shift C (Night 22:00 - 06:00)">Shift C (Night Crew: 22:00 - 06:00)</option>
+                                <option value="General Shift (08:30 AM - 04:30 PM)">General Shift (08:30 AM - 04:30 PM)</option>
+                                <option value="Shift A (08:00 AM - 03:30 PM)">Shift A (08:00 AM - 03:30 PM)</option>
+                                <option value="Shift B (03:30 PM - 10:00 PM)">Shift B (03:30 PM - 10:00 PM)</option>
+                                <option value="Shift C (10:00 PM - 08:00 AM)">Shift C (10:00 PM - 08:00 AM)</option>
                             </select>
                         </div>
                         <div>
@@ -697,6 +726,7 @@
                         <button class="btn btn-primary btn-sm" onclick="saveShiftDescriptions()">Save Shift Notes</button>
                     </div>
                     <div class="shift-submission-grid">
+                        <div><label class="form-label">General Shift Description</label><textarea id="shift-desc-general" class="form-control" rows="3" placeholder="General Shift problem / solution..."></textarea></div>
                         <div><label class="form-label">Shift A Description</label><textarea id="shift-desc-a" class="form-control" rows="3" placeholder="Shift A problem / solution..."></textarea></div>
                         <div><label class="form-label">Shift B Description</label><textarea id="shift-desc-b" class="form-control" rows="3" placeholder="Shift B problem / solution..."></textarea></div>
                         <div><label class="form-label">Shift C Description</label><textarea id="shift-desc-c" class="form-control" rows="3" placeholder="Shift C problem / solution..."></textarea></div>
@@ -827,7 +857,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <h4 style="color:var(--accent-success); font-size:13.5px;">📌 Weekly Filters Submission & Remarks Panel (A, B, C Shift Sign-off)</h4>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <select id="weekly-shift-select" class="form-control" style="width:150px;"><option value="Shift A (Morning)">Shift A (Morning Crew)</option><option value="Shift B (Evening)">Shift B (Evening Crew)</option><option value="Shift C (Night)">Shift C (Night Crew)</option></select>
+                            <select id="weekly-shift-select" class="form-control" style="width:150px;"><option value="General Shift (08:30 AM - 04:30 PM)">General Shift (08:30 AM - 04:30 PM)</option><option value="Shift A (Morning)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (Evening)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (Night)">Shift C (10:00 PM - 08:00 AM)</option></select>
                             <input type="text" id="weekly-tech-select" class="form-control" value="Haseeb Awan" readonly style="width:160px;">
                         </div>
                     </div>
@@ -842,14 +872,14 @@
                         <table>
                             <thead><tr><th>Filter / Strainer Category</th><th>Equipment Unit</th><th>Weekly Protocol</th><th>Assigned Worker</th><th>Last Cleaned</th><th>Status</th><th>Verification</th></tr></thead>
                             <tbody id="weekly-table-body">
-                                <tr><td><strong>1. Suction Loader Filters</strong></td><td>Husky Resin Hoppers 1-5</td><td>Remove mesh screen, clean with compressed air, check gasket.</td><td>M Arsalan / Tufail</td><td>2026-07-09 (<strong style="color:#ff6b6b;">9 Days Ago</strong>)</td><td><span class="status-badge critical">🔴 Overdue / Red Mark</span></td><td><label class="checkbox-label"><input type="checkbox" id="wf-1"> Cleaned & OK</label></td></tr>
-                                <tr><td><strong>2. Resin Dryer Filters</strong></td><td>Husky Drying Hoppers</td><td>Clean process air filter element & inspect return box for dust.</td><td>Arsalan Niazi / M Danish</td><td>2026-07-09 (<strong style="color:#ff6b6b;">9 Days Ago</strong>)</td><td><span class="status-badge critical">🔴 Overdue / Red Mark</span></td><td><label class="checkbox-label"><input type="checkbox" id="wf-2"> Cleaned & OK</label></td></tr>
-                                <tr><td><strong>3. Regeneration Filters</strong></td><td>DH Dehumidifier Reg. Circuit</td><td>Clean regeneration exhaust cartridges & check heater drop.</td><td>Wali Muhammad</td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
-                                <tr><td><strong>4. AHU Filters</strong></td><td>Plant Molding & Utilities AHU</td><td>Wash primary pre-filters with mild detergent, check pocket filters.</td><td>Farooq Patel / M Kamal</td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
-                                <tr><td><strong>5. DH Filters</strong></td><td>Husky Mold Enclosures DH</td><td>Clean process filter matrix & check condensing coil drains.</td><td>Wali Shah</td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
-                                <tr><td><strong>6. Compressor Air Filters</strong></td><td>Atlas GA 75 & I.R. Sierra</td><td>Blow out heavy-duty air intake filter housings & check drop.</td><td>Abdul Hameed</td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
-                                <tr><td><strong>7. Chilled Water Strainers</strong></td><td>Husky Machines #1-#5 Manifolds</td><td>Isolate valves, open Y-strainer caps, clean stainless mesh baskets.</td><td>M Siddiq / Abdul Wajid</td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
-                                <tr><td><strong>8. Cooling Water Strainers</strong></td><td>Husky Heat Exchanger Inlets</td><td>Isolate valves, remove Y-strainer screens, remove sediment/algae.</td><td>M Siddiq / Abdul Wajid</td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>1. Suction Loader Filters</strong></td><td>Husky Resin Hoppers 1-5</td><td>Remove mesh screen, clean with compressed air, check gasket.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-09 (<strong style="color:#ff6b6b;">9 Days Ago</strong>)</td><td><span class="status-badge critical">🔴 Overdue / Red Mark</span></td><td><label class="checkbox-label"><input type="checkbox" id="wf-1"> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>2. Resin Dryer Filters</strong></td><td>Husky Drying Hoppers</td><td>Clean process air filter element & inspect return box for dust.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-09 (<strong style="color:#ff6b6b;">9 Days Ago</strong>)</td><td><span class="status-badge critical">🔴 Overdue / Red Mark</span></td><td><label class="checkbox-label"><input type="checkbox" id="wf-2"> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>3. Regeneration Filters</strong></td><td>DH Dehumidifier Reg. Circuit</td><td>Clean regeneration exhaust cartridges & check heater drop.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>4. AHU Filters</strong></td><td>Plant Molding & Utilities AHU</td><td>Wash primary pre-filters with mild detergent, check pocket filters.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>5. DH Filters</strong></td><td>Husky Mold Enclosures DH</td><td>Clean process filter matrix & check condensing coil drains.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>6. Compressor Air Filters</strong></td><td>Atlas GA 75 & I.R. Sierra</td><td>Blow out heavy-duty air intake filter housings & check drop.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>7. Chilled Water Strainers</strong></td><td>Husky Machines #1-#5 Manifolds</td><td>Isolate valves, open Y-strainer caps, clean stainless mesh baskets.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
+                                <tr><td><strong>8. Cooling Water Strainers</strong></td><td>Husky Heat Exchanger Inlets</td><td>Isolate valves, remove Y-strainer screens, remove sediment/algae.</td><td><span class="status-badge info">Unassigned</span></td><td>2026-07-13 (5 Days Ago)</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Cleaned & OK</label></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -917,7 +947,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <h4 style="color:var(--accent-purple); font-size:13.5px;">📌 Monthly Compressor PM Submission & Remarks Panel</h4>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <select id="monthly-shift-select" class="form-control" style="width:150px;"><option value="Shift A (Morning)">Shift A (Morning Crew)</option><option value="Shift B (Evening)">Shift B (Evening Crew)</option><option value="Shift C (Night)">Shift C (Night Crew)</option></select>
+                            <select id="monthly-shift-select" class="form-control" style="width:150px;"><option value="General Shift (08:30 AM - 04:30 PM)">General Shift (08:30 AM - 04:30 PM)</option><option value="Shift A (Morning)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (Evening)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (Night)">Shift C (10:00 PM - 08:00 AM)</option></select>
                             <input type="text" id="monthly-tech-select" class="form-control" value="Haseeb Awan" readonly style="width:160px;">
                         </div>
                     </div>
@@ -932,12 +962,12 @@
                         <table>
                             <thead><tr><th>Monthly Service Item</th><th>Equipment Unit</th><th>Procedure Description</th><th>Assigned Worker</th><th>Status</th><th>Verification</th></tr></thead>
                             <tbody>
-                                <tr><td><strong>1. Oil Level Check & Sampling</strong></td><td>Atlas Copco & I.R.</td><td>Check synthetic oil sight glass precisely; top-up if below 3/4. Draw 100ml sample for lab analysis.</td><td>Wali Muhammad / M Arsalan</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
-                                <tr><td><strong>2. Clean Inter-Cooler Matrix</strong></td><td>Atlas Copco & I.R.</td><td>Clean inter-cooler core fins and tubes with compressed air & chemical foam.</td><td>Wali Shah / Arsalan Niazi</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
-                                <tr><td><strong>3. Clean After-Cooler Matrix</strong></td><td>Atlas Copco & I.R.</td><td>Clean after-cooler matrix to prevent high discharge air temp (`< 35°C` above ambient).</td><td>Abdul Hameed / M Danish</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
-                                <tr><td><strong>4. Clean Suction Head & Unloader</strong></td><td>Atlas Copco & I.R.</td><td>Disassemble suction head unloader valve assembly, clean piston/spring mechanism, replace o-rings.</td><td>Kamran Shehzad / Tufail</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
-                                <tr><td><strong>5. Check Lines & Internal Filters</strong></td><td>Atlas Copco & I.R.</td><td>Inspect all high-pressure air hoses, oil pipes, and flexible joints for wear/weeping. Retighten flanges.</td><td>Haseeb Awan / Farooq Patel</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
-                                <tr><td><strong>6. Replace Oil Filter Elements</strong></td><td>Atlas Copco & I.R.</td><td>Replace primary & secondary synthetic oil filter cartridges. Check old elements with magnet.</td><td>M Ahsan / M Kamal</td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
+                                <tr><td><strong>1. Oil Level Check & Sampling</strong></td><td>Atlas Copco & I.R.</td><td>Check synthetic oil sight glass precisely; top-up if below 3/4. Draw 100ml sample for lab analysis.</td><td><span class="status-badge info">Unassigned</span></td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
+                                <tr><td><strong>2. Clean Inter-Cooler Matrix</strong></td><td>Atlas Copco & I.R.</td><td>Clean inter-cooler core fins and tubes with compressed air & chemical foam.</td><td><span class="status-badge info">Unassigned</span></td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
+                                <tr><td><strong>3. Clean After-Cooler Matrix</strong></td><td>Atlas Copco & I.R.</td><td>Clean after-cooler matrix to prevent high discharge air temp (`< 35°C` above ambient).</td><td><span class="status-badge info">Unassigned</span></td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
+                                <tr><td><strong>4. Clean Suction Head & Unloader</strong></td><td>Atlas Copco & I.R.</td><td>Disassemble suction head unloader valve assembly, clean piston/spring mechanism, replace o-rings.</td><td><span class="status-badge info">Unassigned</span></td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
+                                <tr><td><strong>5. Check Lines & Internal Filters</strong></td><td>Atlas Copco & I.R.</td><td>Inspect all high-pressure air hoses, oil pipes, and flexible joints for wear/weeping. Retighten flanges.</td><td><span class="status-badge info">Unassigned</span></td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
+                                <tr><td><strong>6. Replace Oil Filter Elements</strong></td><td>Atlas Copco & I.R.</td><td>Replace primary & secondary synthetic oil filter cartridges. Check old elements with magnet.</td><td><span class="status-badge info">Unassigned</span></td><td><span class="status-badge operational">On Schedule</span></td><td><label class="checkbox-label"><input type="checkbox" checked> Logged</label></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -953,6 +983,22 @@
                     </div>
                     <button class="btn btn-primary" onclick="openCreateWOModal()">+ Create Work Order</button>
                 </div>
+                <div class="card" style="border-left:4px solid var(--accent-purple);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                        <div><h4>🤝 Team-to-Team Work Assignment Center</h4><p style="font-size:12px;color:var(--text-secondary);">Engineers, supervisors, technical officers and technicians can assign new work to one another. Existing records can only be edited by the Owner.</p></div>
+                        <span class="status-badge purple">Append-only team assignments</span>
+                    </div>
+                    <div class="shift-submission-grid">
+                        <div><label class="form-label">Assign To</label><select id="team-task-assignee" class="form-control"></select></div>
+                        <div><label class="form-label">Target Asset</label><select id="team-task-asset" class="form-control"></select></div>
+                        <div><label class="form-label">Priority</label><select id="team-task-priority" class="form-control"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
+                        <div><label class="form-label">Due Date</label><input id="team-task-due" type="date" class="form-control"></div>
+                    </div>
+                    <div style="margin-top:10px;"><label class="form-label">Work Description</label><textarea id="team-task-description" class="form-control" rows="2" placeholder="Describe the work to be completed, expected result and any safety requirements..."></textarea></div>
+                    <button class="btn btn-primary" style="margin-top:10px;" onclick="createTeamAssignment()">Assign Work & Notify Team</button>
+                    <div class="table-container" style="margin-top:14px;"><table><thead><tr><th>ID</th><th>Assigned By</th><th>Assigned To</th><th>Asset</th><th>Description</th><th>Priority / Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="team-assignments-body"></tbody></table></div>
+                </div>
+
                 <div class="card">
                     <div class="table-container">
                         <table>
@@ -971,7 +1017,7 @@
                         <p>Complete searchable repository of every A, B, and C shift checklist and maintenance log saved across years</p>
                     </div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-primary btn-sm" onclick="exportYearlyArchiveCSV()">📥 Export Filtered Archive to CSV/Excel</button>
+                        <select id="archive-header-format" class="form-control" style="width:105px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-primary btn-sm" onclick="exportRowsByFormat('Yearly Archive',appData.yearlyArchive,document.getElementById('archive-header-format').value)">📥 Download Archive</button>
                         <button class="btn btn-outline btn-sm" onclick="exportDataJSON()">📦 Complete Yearly JSON Backup</button>
                     </div>
                 </div>
@@ -985,7 +1031,7 @@
                             </div>
                             <div>
                                 <label class="form-label" style="font-size:11px;">Filter Shift</label>
-                                <select id="archive-shift-select" class="form-control" style="width:125px;" onchange="renderYearlyArchive()"><option value="All">All Shifts</option><option value="Shift A">Shift A</option><option value="Shift B">Shift B</option><option value="Shift C">Shift C</option></select>
+                                <select id="archive-shift-select" class="form-control" style="width:125px;" onchange="renderYearlyArchive()"><option value="All">All Shifts</option><option value="General Shift">General Shift</option><option value="Shift A">Shift A</option><option value="Shift B">Shift B</option><option value="Shift C">Shift C</option></select>
                             </div>
                             <div>
                                 <label class="form-label" style="font-size:11px;">Filter Category</label>
@@ -1257,33 +1303,20 @@
                     </div>
                 </div>
 
-                <div class="card" style="border:1px solid var(--accent-info);">
-                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-                        <div><h4 style="color:var(--accent-info);">☁ Cross-Device Real-Time Sync</h4><p style="font-size:12px;color:var(--text-secondary);">Connect your own Supabase project. Credentials remain in this browser and are not embedded in the application source.</p></div>
-                        <span id="sync-settings-status" class="status-badge info">Not Configured</span>
+                <div class="card" style="border:1px solid var(--accent-primary);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                        <div><h4 style="color:var(--accent-primary);">📥 Module Downloads & Merged Excel Workbook</h4><p style="font-size:12px;color:var(--text-secondary);">Download each module as CSV, Excel, Word or PDF. The merged Excel option retains separate worksheets.</p></div>
+                        <div style="display:flex;gap:6px;"><select id="merged-export-format" class="form-control" style="width:110px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-success" onclick="downloadAllMerged(document.getElementById('merged-export-format').value)">⬇ Download All / Merged Data</button></div>
                     </div>
-                    <div class="shift-submission-grid">
-                        <div><label class="form-label">Supabase Project URL</label><input id="sync-project-url" class="form-control" type="url" placeholder="https://your-project.supabase.co"></div>
-                        <div><label class="form-label">Supabase Anon/Public Key</label><input id="sync-anon-key" class="form-control" type="password" placeholder="Paste anon/public key"></div>
-                        <div><label class="form-label">Shared Plant Workspace ID</label><input id="sync-site-id" class="form-control" placeholder="e.g. plant-karachi-main"></div>
-                    </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-                        <button class="btn btn-primary" onclick="saveCloudSyncSettings()">Connect & Start Real-Time Sync</button>
-                        <button class="btn btn-outline" onclick="testCloudSync()">Test Connection</button>
-                        <button class="btn btn-outline" onclick="copySupabaseSetupSQL()">Copy Setup SQL</button>
-                        <button class="btn btn-danger btn-sm" onclick="disconnectCloudSync()">Disconnect</button>
-                    </div>
-                    <details id="supabase-setup-details" style="margin-top:12px;font-size:11.5px;color:var(--text-secondary);"><summary style="cursor:pointer;color:var(--accent-info);font-weight:700;">Required one-time Supabase table setup</summary><pre style="white-space:pre-wrap;background:var(--bg-input);padding:10px;border-radius:8px;margin-top:8px;">create table if not exists public.plantmaster_sync (
-  site_id text primary key,
-  data jsonb not null,
-  updated_at timestamptz not null default now()
-);
-alter table public.plantmaster_sync enable row level security;
-create policy "plantmaster read" on public.plantmaster_sync for select to anon using (true);
-create policy "plantmaster insert" on public.plantmaster_sync for insert to anon with check (true);
-create policy "plantmaster update" on public.plantmaster_sync for update to anon using (true) with check (true);
-alter publication supabase_realtime add table public.plantmaster_sync;</pre></details>
+                    <div id="module-export-grid" class="home-nav-grid"></div>
                 </div>
+
+                <div class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;"><div><h4>🔄 Live Application Activity</h4><p style="font-size:12px;color:var(--text-secondary);">Every saved action from every synchronized user and device appears here.</p></div><span class="status-badge operational">Globally synchronized</span></div>
+                    <div class="table-container"><table><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Destination</th><th>Details</th></tr></thead><tbody id="system-activity-body"></tbody></table></div>
+                </div>
+
+                
 
                 <div class="grid-2">
                     <div class="card">
@@ -1291,7 +1324,7 @@ alter publication supabase_realtime add table public.plantmaster_sync;</pre></de
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Generate professional reports for management audits, ISO maintenance documentation, and shift handovers.</p>
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             <button class="btn btn-primary" onclick="exportDataJSON()">📦 Download Full Database Backup (JSON)</button>
-                            <button class="btn btn-outline" onclick="exportYearlyArchiveCSV()">📊 Export Yearly Audit Archive (CSV/Excel)</button>
+                            <div style="display:flex;gap:6px;"><select id="reports-archive-format" class="form-control" style="width:105px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-outline" onclick="exportRowsByFormat('Yearly Archive',appData.yearlyArchive,document.getElementById('reports-archive-format').value)">📊 Download Yearly Archive</button></div>
                             <button class="btn btn-outline" onclick="window.print()">🖨️ Print Plant Daily Maintenance Summary Report</button>
                         </div>
                     </div>
@@ -1307,6 +1340,33 @@ alter publication supabase_realtime add table public.plantmaster_sync;</pre></de
                             <button class="btn btn-danger" onclick="requirePermission(() => resetFactoryData(), 'Master Reset System Data')">⚠️ Reset System to Initial Plant Defaults</button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- DEDICATED CROSS-DEVICE SYNC OPTION -->
+            <div id="tab-sync" class="tab-content">
+                <div class="section-header">
+                    <div class="section-title"><h3>Cross-Device Synchronization</h3><p>Connect phones, tablets and computers to the same live plant database.</p></div>
+                    <button class="btn btn-outline btn-sm" onclick="switchTab('dashboard')">← Back to Home</button>
+                </div>
+                <div class="card" style="border:1px solid var(--accent-info);">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                        <div><h4 style="color:var(--accent-info);">☁ Automatic Cross-Device Synchronization</h4><p style="font-size:12px;color:var(--text-secondary);">Supabase is preconfigured. After a successful PIN login, PlantMaster automatically downloads the latest plant state and uploads completed work.</p></div>
+                        <span id="sync-settings-status" class="status-badge info">Ready</span>
+                    </div>
+                    <div class="grid-3">
+                        <div style="background:var(--bg-input);padding:12px;border-radius:8px;border:1px solid var(--border);"><strong>Connection</strong><div id="auto-sync-connection-detail" style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Waiting for secure PIN login</div></div>
+                        <div style="background:var(--bg-input);padding:12px;border-radius:8px;border:1px solid var(--border);"><strong>Offline-first buffer</strong><div id="auto-sync-buffer-detail" style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Local changes are protected in this device</div></div>
+                        <div style="background:var(--bg-input);padding:12px;border-radius:8px;border:1px solid var(--border);"><strong>Workspace</strong><div style="font-size:11px;color:var(--text-secondary);margin-top:5px;">PlantMaster Pro Main</div></div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="forceAutomaticSync()">↻ Sync Now</button>
+                        <button class="btn btn-outline" onclick="testCloudSync()">Test Automatic Connection</button>
+                    </div>
+                    <div id="automatic-sync-message" style="margin-top:10px;font-size:11.5px;color:var(--text-secondary);">No URL, API key, or workspace input is required.</div>
+                    <details id="supabase-setup-details" style="margin-top:12px;font-size:11.5px;color:var(--text-secondary);"><summary style="cursor:pointer;color:var(--accent-info);font-weight:700;">Database table status/help</summary><pre style="white-space:pre-wrap;background:var(--bg-input);padding:10px;border-radius:8px;margin-top:8px;">Required table: public.plantmaster_sync
+Realtime publication: supabase_realtime
+The application will report “Setup Required” if this table has not yet been created.</pre></details>
                 </div>
             </div>
 
@@ -1428,11 +1488,7 @@ alter publication supabase_realtime add table public.plantmaster_sync;</pre></de
             </div>
             <div class="form-group">
                 <label class="form-label">Assign To Personnel</label>
-                <select id="wo-assign" class="form-control">
-                    <option value="Wali Muhammad">Wali Muhammad</option><option value="Wali Shah">Wali Shah</option><option value="Abdul Hameed">Abdul Hameed</option><option value="Kamran Shehzad">Kamran Shehzad</option><option value="Haseeb Awan">Haseeb Awan</option><option value="M Ahsan">M Ahsan</option>
-                    <option value="M Arsalan">M Arsalan</option><option value="Arsalan Niazi">Arsalan Niazi</option><option value="M Danish">M Danish</option><option value="Tufail">Tufail</option><option value="Farooq Patel">Farooq Patel</option><option value="M Kamal">M Kamal</option><option value="M Siddiq">M Siddiq</option><option value="Abdul Wajid">Abdul Wajid</option>
-                    <option value="Abdul Wahid Hussan">Abdul Wahid Hussan</option><option value="M Hassan">M Hassan</option>
-                </select>
+                <select id="wo-assign" class="form-control"><option value="Unassigned">Unassigned — use Team Assignment Center after creating ticket</option></select>
             </div>
             <div class="form-group">
                 <label class="form-label">Priority Level</label>
@@ -1477,7 +1533,7 @@ alter publication supabase_realtime add table public.plantmaster_sync;</pre></de
             <div class="form-group">
                 <label class="form-label">Assigned Shift</label>
                 <select id="staff-shift" class="form-control">
-                    <option value="Shift A (Morning 06-14)">Shift A (Morning 06:00 - 14:00)</option><option value="Shift B (Evening 14-22)">Shift B (Evening 14:00 - 22:00)</option><option value="Shift C (Night 22-06)">Shift C (Night 22:00 - 06:00)</option><option value="General Shift (08-17)">General Shift (08:00 - 17:00)</option>
+                    <option value="Shift A (08:00-15:30)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (15:30-22:00)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (22:00-08:00)">Shift C (10:00 PM - 08:00 AM)</option><option value="General Shift (08:30-16:30)">General Shift (08:30 AM - 04:30 PM)</option>
                 </select>
             </div>
             <div class="form-group">
@@ -1519,7 +1575,17 @@ alter publication supabase_realtime add table public.plantmaster_sync;</pre></de
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script>
+const SUPABASE_URL = "https://hbagiydystgdtjekbauh.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_lyoX3idkGS5kW-XyfU0uWA_Rf73iccj";
+const SUPABASE_SITE_ID = "plantmaster-pro-main";
+const SUPABASE_PENDING_KEY = "PlantMasterPro_PendingSupabaseSync";
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth:{persistSession:false,autoRefreshToken:false}}) : null;
 /* =========================================================
    PLANTMASTER PRO — MASTER PIN `9593` & CLEAN NAMES STATE
    ========================================================= */
@@ -1557,10 +1623,10 @@ const defaultData = {
     ],
 
     workOrders: [
-        { id: "WO-104", asset: "Husky HPP5 #4", desc: "120,000 Cycle PM mold & clamp overhaul due immediately. Clean cores, neck rings, cavities, cool-pick tubes, and grease linear slides.", assign: "Wali Muhammad", priority: "High", date: "2026-07-18", status: "Open" },
-        { id: "WO-103", asset: "Husky HPP5 #1", desc: "Take hydraulic oil sample for ISO lab testing and check tie-bar stretch tonnage before reaching 120k limit.", assign: "M Arsalan", priority: "Medium", date: "2026-07-17", status: "In Progress" },
-        { id: "WO-102", asset: "Cooling Tower Fan #2", desc: "Verify fan belts tension and grease fan bearing blocks.", assign: "Tufail", priority: "Low", date: "2026-07-15", status: "Completed" },
-        { id: "WO-101", asset: "Atlas Copco GA 75 VSD", desc: "Inspect auto-drain solenoid on receiver tank and blow out compressor air intake filter.", assign: "Kamran Shehzad", priority: "Medium", date: "2026-07-12", status: "Completed" }
+        { id: "WO-104", asset: "Husky HPP5 #4", desc: "120,000 Cycle PM mold & clamp overhaul due immediately. Clean cores, neck rings, cavities, cool-pick tubes, and grease linear slides.", assign: "Unassigned", priority: "High", date: "2026-07-18", status: "Open" },
+        { id: "WO-103", asset: "Husky HPP5 #1", desc: "Take hydraulic oil sample for ISO lab testing and check tie-bar stretch tonnage before reaching 120k limit.", assign: "Unassigned", priority: "Medium", date: "2026-07-17", status: "In Progress" },
+        { id: "WO-102", asset: "Cooling Tower Fan #2", desc: "Verify fan belts tension and grease fan bearing blocks.", assign: "Unassigned", priority: "Low", date: "2026-07-15", status: "Completed" },
+        { id: "WO-101", asset: "Atlas Copco GA 75 VSD", desc: "Inspect auto-drain solenoid on receiver tank and blow out compressor air intake filter.", assign: "Unassigned", priority: "Medium", date: "2026-07-12", status: "Completed" }
     ],
 
     yearlyArchive: [
@@ -1573,24 +1639,24 @@ const defaultData = {
     ],
 
     staff: [
-        { id: "ENG-01", name: "M Hassan", role: "Engineer", spec: "Plant Lead & Maintenance Engineer", shift: "General Shift (08-17)", contact: "Ext 101", pin: "7001", status: "On Duty" },
-        { id: "SUP-01", name: "Abdul Wahid Hussan", role: "Supervisor", spec: "Shift Supervisor", shift: "Shift A (Morning 06-14)", contact: "Ext 201", pin: "1234", status: "On Duty" },
+        { id: "ENG-01", name: "M Hassan", role: "Engineer", spec: "Plant Lead & Maintenance Engineer", shift: "General Shift (08:30-16:30)", contact: "Ext 101", pin: "7001", status: "On Duty" },
+        { id: "SUP-01", name: "Abdul Wahid Hussan", role: "Supervisor", spec: "Shift Supervisor", shift: "Shift A (08:00-15:30)", contact: "Ext 201", pin: "1234", status: "On Duty" },
 
-        { id: "TO-01", name: "Wali Muhammad", role: "Technical Officer", spec: "Lead Molding Mechanical Officer", shift: "Shift A (Morning 06-14)", contact: "Ext 301", pin: "5001", status: "On Duty" },
-        { id: "TO-02", name: "Wali Shah", role: "Technical Officer", spec: "Hydraulics & Dryers Officer", shift: "Shift B (Evening 14-22)", contact: "Ext 302", pin: "5002", status: "On Duty" },
-        { id: "TO-03", name: "Abdul Hameed", role: "Technical Officer", spec: "Compressors & Pneumatics Officer", shift: "Shift C (Night 22-06)", contact: "Ext 303", pin: "5003", status: "On Duty" },
-        { id: "TO-04", name: "Kamran Shehzad", role: "Technical Officer", spec: "Chiller Plant Officer", shift: "General Shift (08-17)", contact: "Ext 304", pin: "5004", status: "On Duty" },
-        { id: "TO-05", name: "Haseeb Awan", role: "Technical Officer", spec: "Cooling Tower & Heavy Pumps Officer", shift: "Shift A (Morning 06-14)", contact: "Ext 305", pin: "9593", status: "On Duty" },
-        { id: "TO-06", name: "M Ahsan", role: "Technical Officer", spec: "Electrical Drives & VSD Officer", shift: "Shift B (Evening 14-22)", contact: "Ext 306", pin: "5006", status: "On Duty" },
+        { id: "TO-01", name: "Wali Muhammad", role: "Technical Officer", spec: "Lead Molding Mechanical Officer", shift: "Shift A (08:00-15:30)", contact: "Ext 301", pin: "5001", status: "On Duty" },
+        { id: "TO-02", name: "Wali Shah", role: "Technical Officer", spec: "Hydraulics & Dryers Officer", shift: "Shift B (15:30-22:00)", contact: "Ext 302", pin: "5002", status: "On Duty" },
+        { id: "TO-03", name: "Abdul Hameed", role: "Technical Officer", spec: "Compressors & Pneumatics Officer", shift: "Shift C (22:00-08:00)", contact: "Ext 303", pin: "5003", status: "On Duty" },
+        { id: "TO-04", name: "Kamran Shehzad", role: "Technical Officer", spec: "Chiller Plant Officer", shift: "General Shift (08:30-16:30)", contact: "Ext 304", pin: "5004", status: "On Duty" },
+        { id: "TO-05", name: "Haseeb Awan", role: "Technical Officer", spec: "Cooling Tower & Heavy Pumps Officer", shift: "Shift A (08:00-15:30)", contact: "Ext 305", pin: "9593", status: "On Duty" },
+        { id: "TO-06", name: "M Ahsan", role: "Technical Officer", spec: "Electrical Drives & VSD Officer", shift: "Shift B (15:30-22:00)", contact: "Ext 306", pin: "5006", status: "On Duty" },
 
-        { id: "TCH-01", name: "M Arsalan", role: "Technician", spec: "Husky Machines Tech", shift: "Shift A (Morning 06-14)", contact: "Ext 401", pin: "1001", status: "On Duty" },
-        { id: "TCH-02", name: "Arsalan Niazi", role: "Technician", spec: "Resin Dryers Tech", shift: "Shift A (Morning 06-14)", contact: "Ext 402", pin: "1002", status: "On Duty" },
-        { id: "TCH-03", name: "M Danish", role: "Technician", spec: "Compressors Tech", shift: "Shift B (Evening 14-22)", contact: "Ext 403", pin: "1003", status: "On Duty" },
-        { id: "TCH-04", name: "Tufail", role: "Technician", spec: "Cooling Tower Tech", shift: "Shift C (Night 22-06)", contact: "Ext 404", pin: "1004", status: "On Duty" },
-        { id: "TCH-05", name: "Farooq Patel", role: "Technician", spec: "Conveyors Tech", shift: "Shift B (Evening 14-22)", contact: "Ext 405", pin: "1005", status: "On Duty" },
-        { id: "TCH-06", name: "M Kamal", role: "Technician", spec: "AHU & DH Tech", shift: "Shift C (Night 22-06)", contact: "Ext 406", pin: "1006", status: "On Duty" },
-        { id: "TCH-07", name: "M Siddiq", role: "Technician", spec: "Water Strainers Tech", shift: "Shift A (Morning 06-14)", contact: "Ext 407", pin: "1007", status: "On Duty" },
-        { id: "TCH-08", name: "Abdul Wajid", role: "Technician", spec: "Pumps Sound & Seals Tech", shift: "Shift B (Evening 14-22)", contact: "Ext 408", pin: "1008", status: "On Duty" }
+        { id: "TCH-01", name: "M Arsalan", role: "Technician", spec: "Husky Machines Tech", shift: "Shift A (08:00-15:30)", contact: "Ext 401", pin: "1001", status: "On Duty" },
+        { id: "TCH-02", name: "Arsalan Niazi", role: "Technician", spec: "Resin Dryers Tech", shift: "Shift A (08:00-15:30)", contact: "Ext 402", pin: "1002", status: "On Duty" },
+        { id: "TCH-03", name: "M Danish", role: "Technician", spec: "Compressors Tech", shift: "Shift B (15:30-22:00)", contact: "Ext 403", pin: "1003", status: "On Duty" },
+        { id: "TCH-04", name: "Tufail", role: "Technician", spec: "Cooling Tower Tech", shift: "Shift C (22:00-08:00)", contact: "Ext 404", pin: "1004", status: "On Duty" },
+        { id: "TCH-05", name: "Farooq Patel", role: "Technician", spec: "Conveyors Tech", shift: "Shift B (15:30-22:00)", contact: "Ext 405", pin: "1005", status: "On Duty" },
+        { id: "TCH-06", name: "M Kamal", role: "Technician", spec: "AHU & DH Tech", shift: "Shift C (22:00-08:00)", contact: "Ext 406", pin: "1006", status: "On Duty" },
+        { id: "TCH-07", name: "M Siddiq", role: "Technician", spec: "Water Strainers Tech", shift: "Shift A (08:00-15:30)", contact: "Ext 407", pin: "1007", status: "On Duty" },
+        { id: "TCH-08", name: "Abdul Wajid", role: "Technician", spec: "Pumps Sound & Seals Tech", shift: "Shift B (15:30-22:00)", contact: "Ext 408", pin: "1008", status: "On Duty" }
     ],
 
     spares: [
@@ -1769,6 +1835,7 @@ function switchTab(tabId) {
     if (tabId === "spares") navItems[10].classList.add("active");
     if (tabId === "owner-security") navItems[11].classList.add("active");
     if (tabId === "reports") navItems[12].classList.add("active");
+    if (tabId === "sync") navItems[13].classList.add("active");
 
     const titleEl = document.getElementById("page-title");
     const subEl = document.getElementById("page-subtitle");
@@ -1792,7 +1859,8 @@ function switchTab(tabId) {
         titleEl.textContent = "👑 Owner Master Security, PIN Assignment & App Transfer Hub"; subEl.textContent = "Assign/Change worker PIN codes or transfer app ownership to a new CEO (Private owner authentication required)";
         renderPINManagementTab();
     }
-    if (tabId === "reports") { titleEl.textContent = "Reports & Export Utilities"; subEl.textContent = "Backup database, export CSV/JSON, and print plant audit reports"; }
+    if (tabId === "reports") { titleEl.textContent = "Reports & Export Utilities"; subEl.textContent = "Download CSV, Excel, Word and PDF reports"; }
+    if (tabId === "sync") { titleEl.textContent = "Cross-Device Synchronization"; subEl.textContent = "Supabase connection, realtime status and multi-device setup"; updateCloudSyncUI(); }
 
     if (tabId === "asset-detail") {
         populateAssetSelector();
@@ -2805,7 +2873,7 @@ submitWeeklyChecklist = function() {
 };
 submitDailyChecklist = function() {
     const failures=getChecklistFailures('#tab-checklists-daily');
-    const shift=document.getElementById('daily-shift-select').value.match(/Shift [ABC]/)?.[0]||'Shift A';
+    const shift=extractShiftName(document.getElementById('daily-shift-select').value);
     const tech=document.getElementById('daily-tech-select').value, supv=document.getElementById('daily-supv-select').value;
     let desc=document.getElementById('daily-desc-box').value.trim();
     if(!desc) desc=failures.length?`${failures.length} detailed status item(s) require corrective action.`:'All inspected items verified OK / Normal.';
@@ -2815,7 +2883,7 @@ submitDailyChecklist = function() {
 };
 submitMonthlyCompressorPM = function() {
     const failures=getChecklistFailures('#tab-pm-monthly');
-    const shift=document.getElementById('monthly-shift-select').value.match(/Shift [ABC]/)?.[0]||'Shift A';
+    const shift=extractShiftName(document.getElementById('monthly-shift-select').value);
     const tech=document.getElementById('monthly-tech-select').value;
     const desc=document.getElementById('monthly-desc-box').value.trim()||`${failures.length?failures.length+' item(s) need corrective action.':'Monthly compressor service completed; all items OK.'}`;
     appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift,tech,asset:'Atlas Copco GA 75 & I.R. Sierra 100',type:'Monthly Compressors PM',desc,supv:'M Hassan',status:failures.length?'Attention Required':'Completed'});
@@ -3115,15 +3183,15 @@ const renderAllBeforeInventorySync=renderAll;
 renderAll=function(){renderAllBeforeInventorySync();renderInventoryLog();updateCloudSyncUI();};
 
 /* Supabase REST + Realtime WebSocket. Configuration is entered at runtime. */
-const SYNC_CONFIG_KEY='PlantMasterPro_SupabaseSyncConfig';
-let cloudSyncConfig=JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)||'null');
+const SYNC_CONFIG_KEY='PlantMasterPro_AutomaticSupabaseSync';
+let cloudSyncConfig={url:SUPABASE_URL,key:SUPABASE_ANON_KEY,siteId:SUPABASE_SITE_ID};
+let hasPendingOfflineChanges=localStorage.getItem(SUPABASE_PENDING_KEY)==='1';
 let cloudSocket=null, cloudHeartbeat=null, cloudPoller=null, cloudUploadTimer=null;
 let applyingRemoteState=false, lastCloudTimestamp='', syncConnectionState='local';
 const stateChannel=('BroadcastChannel' in window)?new BroadcastChannel('PlantMasterPro_GlobalState'):null;
 
-function normalizedSyncConfig(raw=cloudSyncConfig) {
-    if(!raw)return null;
-    return {url:String(raw.url||'').trim().replace(/\/$/,''),key:String(raw.key||'').trim(),siteId:String(raw.siteId||'').trim()};
+function normalizedSyncConfig() {
+    return {url:SUPABASE_URL,key:SUPABASE_ANON_KEY,siteId:SUPABASE_SITE_ID};
 }
 function syncHeaders(extra={}) {return {'apikey':cloudSyncConfig.key,'Authorization':`Bearer ${cloudSyncConfig.key}`,'Content-Type':'application/json',...extra};}
 function syncRowURL(select='data,updated_at'){return `${cloudSyncConfig.url}/rest/v1/plantmaster_sync?site_id=eq.${encodeURIComponent(cloudSyncConfig.siteId)}&select=${select}`;}
@@ -3134,24 +3202,27 @@ function updateCloudSyncUI(message) {
     if(text)text.textContent=message||labels[syncConnectionState]||'Local Sync';
     if(pulse){pulse.classList.toggle('danger',syncConnectionState==='error');pulse.style.backgroundColor=syncConnectionState==='connected'?'var(--accent-success)':(syncConnectionState==='error'?'var(--accent-danger)':'var(--accent-warning)');}
     if(status){status.textContent=configured?(syncConnectionState==='connected'?'Connected':(syncConnectionState==='setup'?'Setup Required':'Configured')):'Not Configured';status.className=`status-badge ${syncConnectionState==='connected'?'operational':(syncConnectionState==='error'?'critical':(syncConnectionState==='setup'?'warning':'info'))}`;}
-    const cfg=normalizedSyncConfig();
-    const url=document.getElementById('sync-project-url'),key=document.getElementById('sync-anon-key'),site=document.getElementById('sync-site-id');
-    if(cfg&&url&&!url.value){url.value=cfg.url;key.value=cfg.key;site.value=cfg.siteId;}
+    const connectionDetail=document.getElementById('auto-sync-connection-detail');
+    const bufferDetail=document.getElementById('auto-sync-buffer-detail');
+    if(connectionDetail) connectionDetail.textContent=window.appUnlocked?(syncConnectionState==='connected'?'Connected and listening for live updates':(syncConnectionState==='setup'?'Database table setup required':'Connecting automatically…')):'Waiting for secure PIN login';
+    if(bufferDetail) bufferDetail.textContent=hasPendingOfflineChanges?'Offline changes waiting to upload':'All local changes synchronized';
 }
 async function fetchCloudRow() {
     const r=await fetch(syncRowURL(),{headers:syncHeaders()}); if(!r.ok)throw new Error(`Supabase ${r.status}: ${await r.text()}`);
     const rows=await r.json(); return rows[0]||null;
 }
 async function pushCloudState() {
-    if(!normalizedSyncConfig()||applyingRemoteState)return;
+    if(!normalizedSyncConfig()||applyingRemoteState||!window.appUnlocked)return;
+    if(!navigator.onLine){hasPendingOfflineChanges=true;localStorage.setItem(SUPABASE_PENDING_KEY,'1');updateCloudSyncUI('Offline — changes buffered');return;}
     const stamp=new Date().toISOString();
     try{
         const r=await fetch(`${cloudSyncConfig.url}/rest/v1/plantmaster_sync?on_conflict=site_id`,{method:'POST',headers:syncHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({site_id:cloudSyncConfig.siteId,data:appData,updated_at:stamp})});
-        if(!r.ok)throw new Error(await r.text()); lastCloudTimestamp=stamp;syncConnectionState='connected';updateCloudSyncUI();
-    }catch(e){console.error('Cloud upload failed',e);syncConnectionState=/PGRST205|plantmaster_sync|schema cache/i.test(e.message)?'setup':'error';updateCloudSyncUI(syncConnectionState==='setup'?'Sync Setup Required':'Sync Error');}
+        if(!r.ok)throw new Error(await r.text()); lastCloudTimestamp=stamp;hasPendingOfflineChanges=false;localStorage.removeItem(SUPABASE_PENDING_KEY);syncConnectionState='connected';updateCloudSyncUI();
+    }catch(e){hasPendingOfflineChanges=true;localStorage.setItem(SUPABASE_PENDING_KEY,'1');console.error('Cloud upload failed',e);syncConnectionState=/PGRST205|plantmaster_sync|schema cache/i.test(e.message)?'setup':'error';updateCloudSyncUI(syncConnectionState==='setup'?'Sync Setup Required':'Sync Error');}
 }
-function scheduleCloudPush(){if(!normalizedSyncConfig()||applyingRemoteState)return;clearTimeout(cloudUploadTimer);cloudUploadTimer=setTimeout(pushCloudState,500);}
+function scheduleCloudPush(){if(!normalizedSyncConfig()||applyingRemoteState||!window.appUnlocked)return;clearTimeout(cloudUploadTimer);cloudUploadTimer=setTimeout(pushCloudState,500);}
 function applyRemoteState(data,stamp='') {
+    if(!window.appUnlocked)return;
     if(!data?.assets||!data?.staff||!data?.yearlyArchive)return;
     if(stamp&&lastCloudTimestamp&&new Date(stamp)<=new Date(lastCloudTimestamp))return;
     applyingRemoteState=true;appData=data;
@@ -3162,7 +3233,8 @@ function applyRemoteState(data,stamp='') {
     document.dispatchEvent(new CustomEvent('plantmaster:statechange',{detail:{source:'remote'}}));
 }
 async function pullCloudState() {
-    if(!normalizedSyncConfig())return;
+    if(!normalizedSyncConfig()||!window.appUnlocked)return;
+    if(hasPendingOfflineChanges){await pushCloudState();if(hasPendingOfflineChanges)return;}
     try{const row=await fetchCloudRow();if(row)applyRemoteState(row.data,row.updated_at);else await pushCloudState();syncConnectionState='connected';updateCloudSyncUI();}
     catch(e){console.error('Cloud download failed',e);syncConnectionState=/PGRST205|plantmaster_sync|schema cache/i.test(e.message)?'setup':'error';updateCloudSyncUI(syncConnectionState==='setup'?'Sync Setup Required':'Sync Error');}
 }
@@ -3185,20 +3257,28 @@ function connectCloudRealtime() {
     // Polling is a fallback if Realtime replication is not enabled.
     cloudPoller=setInterval(pullCloudState,5000);
 }
-function saveCloudSyncSettings() {
-    const raw={url:document.getElementById('sync-project-url').value,key:document.getElementById('sync-anon-key').value,siteId:document.getElementById('sync-site-id').value};
-    const cfg=normalizedSyncConfig(raw);if(!cfg?.url||!cfg?.key||!cfg?.siteId){alert('Enter the Supabase Project URL, anon/public key and shared workspace ID.');return;}
-    cloudSyncConfig=cfg;localStorage.setItem(SYNC_CONFIG_KEY,JSON.stringify(cfg));connectCloudRealtime();alert('Cross-device synchronization configured. Use the same settings and Workspace ID on every device.');
+function saveCloudSyncSettings() { forceAutomaticSync(); }
+async function forceAutomaticSync() {
+    if(!window.appUnlocked){alert('Enter a valid employee PIN before synchronizing plant data.');return;}
+    updateCloudSyncUI('Synchronizing…');
+    if(hasPendingOfflineChanges) await pushCloudState();
+    await pullCloudState();
+    connectCloudRealtime();
+    updateCloudSyncUI();
 }
-async function testCloudSync(){if(!normalizedSyncConfig()){alert('Save the synchronization settings first.');return;}try{await fetchCloudRow();alert('Supabase connection successful.');}catch(e){alert(`Connection failed: ${e.message}`);}}
-function disconnectCloudSync(){if(!confirm('Disconnect this device from cross-device synchronization?'))return;closeCloudRealtime();localStorage.removeItem(SYNC_CONFIG_KEY);cloudSyncConfig=null;syncConnectionState='local';['sync-project-url','sync-anon-key','sync-site-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});updateCloudSyncUI();}
+
+async function testCloudSync(){if(!window.appUnlocked){alert('Enter a valid PIN first.');return;}try{await fetchCloudRow();syncConnectionState='connected';updateCloudSyncUI();alert('Automatic Supabase connection is working.');}catch(e){syncConnectionState=/PGRST205|plantmaster_sync|schema cache/i.test(e.message)?'setup':'error';updateCloudSyncUI(syncConnectionState==='setup'?'Sync Setup Required':'Sync Error');alert(syncConnectionState==='setup'?'Supabase is reachable, but the plantmaster_sync table must be created.':'Automatic connection failed. Check internet access or Supabase project availability.');}}
+function disconnectCloudSync(){alert('Automatic synchronization is permanently configured for this PlantMaster build.');}
+
 
 // All state-changing actions pass through here, updating every section, browser tab, and configured device.
 const saveStateBeforeCrossDeviceSync=saveState;
-saveState=function(){saveStateBeforeCrossDeviceSync();renderInventoryLog();document.dispatchEvent(new CustomEvent('plantmaster:statechange',{detail:{source:'local'}}));if(stateChannel)stateChannel.postMessage({data:appData,stamp:new Date().toISOString()});scheduleCloudPush();};
+saveState=function(){saveStateBeforeCrossDeviceSync();hasPendingOfflineChanges=true;localStorage.setItem(SUPABASE_PENDING_KEY,'1');renderInventoryLog();document.dispatchEvent(new CustomEvent('plantmaster:statechange',{detail:{source:'local'}}));if(stateChannel)stateChannel.postMessage({data:appData,stamp:new Date().toISOString()});scheduleCloudPush();updateCloudSyncUI();};
 if(stateChannel)stateChannel.onmessage=e=>{if(e.data?.data)applyRemoteState(e.data.data,e.data.stamp);};
 
 document.addEventListener('DOMContentLoaded',()=>{renderInventoryLog();updateCloudSyncUI();if(normalizedSyncConfig())connectCloudRealtime();});
+window.addEventListener('online',()=>{if(window.appUnlocked){updateCloudSyncUI('Internet restored — synchronizing…');forceAutomaticSync();}});
+window.addEventListener('offline',()=>updateCloudSyncUI('Offline — changes buffered'));
 renderAll();
 
 
@@ -3265,11 +3345,11 @@ async function copySupabaseSetupSQL() {
     catch(e){prompt('Copy this SQL and run it in Supabase SQL Editor:',SUPABASE_SETUP_SQL);}
 }
 testCloudSync=async function(){
-    if(!normalizedSyncConfig()){alert('Enter and save the Supabase settings first.');return;}
-    try{await fetchCloudRow();syncConnectionState='connected';updateCloudSyncUI();alert('Supabase connection successful. Cross-device synchronization is active.');}
+    if(!window.appUnlocked){alert('Enter a valid employee PIN before testing synchronization.');return;}
+    try{await fetchCloudRow();syncConnectionState='connected';updateCloudSyncUI();alert('Automatic Supabase synchronization is connected and ready.');}
     catch(e){
-        if(/PGRST205|plantmaster_sync|schema cache/i.test(e.message)){showSupabaseSetupRequired();alert('Supabase is connected, but the required plantmaster_sync table has not been created. Expand “Required one-time Supabase table setup”, copy the SQL, and run it once in the Supabase SQL Editor.');}
-        else{syncConnectionState='error';updateCloudSyncUI('Sync Error');alert('Could not connect to Supabase. Check the Project URL and anon/public key.');}
+        if(/PGRST205|plantmaster_sync|schema cache/i.test(e.message)){showSupabaseSetupRequired();alert('Supabase is reachable, but the plantmaster_sync table has not been created yet.');}
+        else{syncConnectionState='error';updateCloudSyncUI('Sync Error');alert('Automatic synchronization is temporarily unavailable. Your work remains safely buffered offline.');}
     }
 };
 
@@ -3279,6 +3359,391 @@ document.getElementById('login-gate').classList.remove('hidden');
 updateLoggedInBadge();
 setTimeout(()=>document.getElementById('login-gate-pin')?.focus(),100);
 
+
+
+/* =========================================================
+   LINKED ASSET DESCRIPTIONS, TEAM ASSIGNMENTS & FULL AUDIT
+   ========================================================= */
+appData.taskAssignments=appData.taskAssignments||[];
+appData.systemActivity=appData.systemActivity||[];
+appData.formDrafts=appData.formDrafts||{};
+if(!appData.assignmentCleanupV1){appData.workOrders.forEach(x=>x.assign='Unassigned');appData.assignmentCleanupV1=true;}
+appData.assets.forEach(a=>{
+    a.descriptionEntries=a.descriptionEntries||[];
+    if(a.description&&!a.descriptionEntries.length)a.descriptionEntries.push({id:`DESC-${a.id}-legacy`,timestamp:localTimestamp(),user:'Migrated Record',text:a.description});
+});
+localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
+
+let toastTimer=null,pendingSaveMeta=null,pendingOwnerOnlyPermission=false;
+function showSaveDestination(message){const t=document.getElementById('save-destination-toast');if(!t)return;t.textContent=`✓ ${message}`;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3200);}
+function setSaveContext(action,destination,details=''){pendingSaveMeta={action,destination,details};}
+function addSystemActivity(action,destination,details=''){
+    appData.systemActivity=appData.systemActivity||[];
+    appData.systemActivity.unshift({id:`ACT-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,timestamp:localTimestamp(),user:currentUserName||'System',action,destination,details});
+    appData.systemActivity=appData.systemActivity.slice(0,500);
+}
+const saveStateBeforeFullAudit=saveState;
+saveState=function(){
+    const meta=pendingSaveMeta||{action:'Application data updated',destination:'Central plant database → linked details → logs → history → sync',details:'A plant record or operating status changed.'};
+    addSystemActivity(meta.action,meta.destination,meta.details);pendingSaveMeta=null;
+    saveStateBeforeFullAudit();renderSystemActivity();
+    showSaveDestination(`Saved to ${meta.destination}${normalizedSyncConfig()?' and queued for cross-device sync':''}`);
+};
+
+function saveAssetDescriptionEntry(assetId,source='Asset card'){
+    const asset=appData.assets.find(a=>a.id===assetId);if(!asset)return;
+    const input=source==='Detailed view'?document.getElementById('asset-description-box'):document.getElementById(`asset-desc-${assetId}`);
+    const text=input?.value.trim();if(!text){showSaveDestination('Write a description before saving.');return;}
+    const entry={id:`DESC-${Date.now()}`,timestamp:localTimestamp(),user:currentUserName,text};
+    asset.descriptionEntries=asset.descriptionEntries||[];asset.descriptionEntries.unshift(entry);asset.description=text;
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:entry.timestamp,shift:'Operational Log',tech:currentUserName,asset:asset.name,type:'Asset Description Update',desc:text,supv:currentUserRole==='Owner'?currentUserName:'Pending Owner Review',status:'Saved'});
+    setSaveContext('Asset description added',`${asset.name} → Asset Card → Detailed View → Logs → Yearly History`,text);
+    saveState();
+}
+saveAssetDescription=function(){saveAssetDescriptionEntry(selectedAssetId,'Detailed view');};
+function renderDescriptionTimeline(asset){
+    const entries=(asset.descriptionEntries||[]).slice(0,5);
+    return `<div class="description-timeline">${entries.length?entries.map(e=>`<div class="description-entry"><strong>${escapeHTML(e.timestamp)} · ${escapeHTML(e.user)}</strong><div style="margin-top:3px;">${escapeHTML(e.text)}</div></div>`).join(''):'<div style="font-size:11px;color:var(--text-muted);">No description updates yet.</div>'}</div>`;
+}
+const decorateBeforeDescriptions=decorateAssetPowerControls;
+decorateAssetPowerControls=function(){
+    decorateBeforeDescriptions();
+    const groups=[['home-husky-list','husky'],['home-compressor-list','compressor'],['home-cooling-list','cooling'],['home-chiller-list','chiller']];
+    groups.forEach(([id,category])=>{
+        const assets=appData.assets.filter(a=>a.category===category),cards=[...document.querySelectorAll(`#${id} .asset-card-interactive`)];
+        cards.forEach((card,i)=>{const a=assets[i];if(!a)return;const box=document.createElement('div');box.className='asset-description-inline';box.onclick=e=>e.stopPropagation();box.innerHTML=`<label class="form-label">📝 ${escapeHTML(a.name)} — Individual Description</label><textarea id="asset-desc-${a.id}" class="form-control" placeholder="Write problem, observation, action or solution for this asset..."></textarea><div class="save-route">Saves to: this asset card → detailed view → logs → yearly history → synchronized devices</div><button class="btn btn-primary btn-sm" style="margin-top:7px;" onclick="saveAssetDescriptionEntry('${a.id}','Asset card');event.stopPropagation();">Save Description Everywhere</button>${renderDescriptionTimeline(a)}`;card.appendChild(box);});
+    });
+};
+const loadBeforeDescriptionTimeline=loadAssetDetails;
+loadAssetDetails=function(id){
+    loadBeforeDescriptionTimeline(id);const a=appData.assets.find(x=>x.id===id);if(!a)return;
+    const box=document.getElementById('asset-description-box');if(box){box.value='';box.placeholder=`Add a new linked description for ${a.name}...`;}
+    let timeline=document.getElementById('detail-description-timeline');if(!timeline&&box){timeline=document.createElement('div');timeline.id='detail-description-timeline';box.insertAdjacentElement('afterend',timeline);}
+    if(timeline)timeline.innerHTML=`<div class="save-route">Saves to: asset card → detailed view → logs → yearly history → synchronized devices</div>${renderDescriptionTimeline(a)}`;
+};
+
+// Exact asset logs prevent one machine's description appearing under a different machine.
+filterAssetHistory=function(){
+    const tbody=document.getElementById('detail-history-body');if(!tbody)return;const asset=appData.assets.find(a=>a.id===selectedAssetId);if(!asset)return;
+    const y=document.getElementById('detail-year-filter').value,sh=document.getElementById('detail-shift-filter').value;
+    const logs=appData.yearlyArchive.filter(x=>x.asset===asset.name&&(y==='All'||x.date.startsWith(y))&&(sh==='All'||x.shift===sh));
+    tbody.innerHTML=logs.length?logs.map(x=>`<tr><td><strong>${escapeHTML(x.date)}</strong></td><td>${escapeHTML(x.shift)}<br><strong>${escapeHTML(x.tech)}</strong></td><td>${escapeHTML(x.type)}</td><td style="max-width:300px;border-left:3px solid var(--accent-primary);">${escapeHTML(x.desc)}</td><td>${escapeHTML(x.supv)}</td><td><span class="status-badge ${/Passed|Completed|Saved/.test(x.status)?'operational':'warning'}">${escapeHTML(x.status)}</span></td><td><button class="btn btn-outline btn-sm owner-edit-control" onclick="openUniversalEditModal('archive','${x.id}')">✏️ Edit</button></td></tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary);">No linked logs for this asset yet.</td></tr>';
+    applyRoleAccessUI();
+};
+
+function populateTeamAssignmentOptions(){
+    const people=document.getElementById('team-task-assignee'),assets=document.getElementById('team-task-asset');if(!people||!assets)return;
+    const previousPerson=people.value,previousAsset=assets.value;
+    people.innerHTML=appData.staff.map(s=>`<option value="${s.id}">${escapeHTML(s.name)} — ${escapeHTML(s.role)}</option>`).join('');
+    assets.innerHTML='<option value="General Plant Work">General Plant Work</option>'+appData.assets.map(a=>`<option value="${a.id}">${escapeHTML(a.name)}</option>`).join('');
+    if([...people.options].some(x=>x.value===previousPerson))people.value=previousPerson;if([...assets.options].some(x=>x.value===previousAsset))assets.value=previousAsset;
+    const due=document.getElementById('team-task-due');if(due&&!due.value){const d=new Date();d.setDate(d.getDate()+1);due.value=localISODate(d);}
+}
+function createTeamAssignment(){
+    if(!window.appUnlocked)return;
+    const assigneeId=document.getElementById('team-task-assignee').value,assetValue=document.getElementById('team-task-asset').value,desc=document.getElementById('team-task-description').value.trim();
+    if(!desc){alert('Write the work description before assigning it.');return;}
+    const person=appData.staff.find(s=>s.id===assigneeId),asset=appData.assets.find(a=>a.id===assetValue);
+    const task={id:`TASK-${Date.now().toString().slice(-7)}`,createdAt:localTimestamp(),assignedBy:currentUserName,assignedByRole:currentUserRole,assigneeId,assignee:person?.name||'Unassigned',assetId:asset?.id||'',asset:asset?.name||assetValue,desc,priority:document.getElementById('team-task-priority').value,due:document.getElementById('team-task-due').value,status:'Assigned'};
+    appData.taskAssignments.unshift(task);
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:task.createdAt,shift:'Team Assignment',tech:currentUserName,asset:task.asset,type:'Work Assigned',desc:`Assigned to ${task.assignee}: ${task.desc}`,supv:currentUserName,status:'Assigned'});
+    document.getElementById('team-task-description').value='';
+    setSaveContext('Work assigned',`Team Assignment Center → ${task.assignee} → ${task.asset} → Logs → Sync`,task.desc);saveState();
+}
+function updateTeamAssignmentStatus(index){
+    const task=appData.taskAssignments[index];if(!task)return;
+    const allowed=currentUserRole==='Owner'||task.assignee===currentUserName||task.assignedBy===currentUserName;if(!allowed){alert('Only the assignee, assigning person, or Owner can update this task status.');return;}
+    task.status=task.status==='Completed'?'Assigned':'Completed';task.updatedAt=localTimestamp();
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:task.updatedAt,shift:'Team Assignment',tech:currentUserName,asset:task.asset,type:'Assignment Status Update',desc:`${task.id} changed to ${task.status}. ${task.desc}`,supv:currentUserName,status:task.status});
+    setSaveContext('Assignment status changed',`Team Assignment Center → Asset Logs → Yearly History → Sync`,`${task.id}: ${task.status}`);saveState();
+}
+function renderTeamAssignments(){
+    populateTeamAssignmentOptions();const body=document.getElementById('team-assignments-body');if(!body)return;
+    body.innerHTML=appData.taskAssignments.length?appData.taskAssignments.map((t,i)=>`<tr><td><strong>${escapeHTML(t.id)}</strong><br><small>${escapeHTML(t.createdAt)}</small></td><td>${escapeHTML(t.assignedBy)}<br><small>${escapeHTML(t.assignedByRole)}</small></td><td><strong>${escapeHTML(t.assignee)}</strong></td><td>${escapeHTML(t.asset)}</td><td style="max-width:260px;">${escapeHTML(t.desc)}</td><td><span class="status-badge ${t.priority==='Critical'?'critical':(t.priority==='High'?'warning':'info')}">${escapeHTML(t.priority)}</span><br><small>${escapeHTML(t.due)}</small></td><td><span class="status-badge ${t.status==='Completed'?'operational':'warning'}">${escapeHTML(t.status)}</span></td><td><button class="btn btn-outline btn-sm" onclick="updateTeamAssignmentStatus(${i})">${t.status==='Completed'?'Reopen':'Complete'}</button></td></tr>`).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">No work is pre-assigned. Use the form above to create the first team assignment.</td></tr>';
+}
+function renderSystemActivity(){const body=document.getElementById('system-activity-body');if(!body)return;body.innerHTML=(appData.systemActivity||[]).slice(0,150).map(x=>`<tr><td>${escapeHTML(x.timestamp)}</td><td><strong>${escapeHTML(x.user)}</strong></td><td>${escapeHTML(x.action)}</td><td style="color:var(--accent-info);">${escapeHTML(x.destination)}</td><td>${escapeHTML(x.details)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">No synchronized activity yet.</td></tr>';}
+
+// Owner has exclusive edit/delete/configuration rights. Other roles retain read access and append operational logs/assignments.
+const requirePermissionBeforeOwnerPolicy=requirePermission;
+requirePermission=function(callback,description=''){
+    const ownerOnly=/Edit|Modify|Remove|Reset|Transfer|PIN|Add New Spare|Add New Tool|Add New Team Member|Import Master|Register New Tool/i.test(description);
+    if(!ownerOnly)return requirePermissionBeforeOwnerPolicy(callback,description);
+    if(currentUserRole==='Owner'){callback();return;}
+    pendingOwnerOnlyPermission=true;pendingActionCallback=callback;document.getElementById('permission-action-title').textContent=`Owner-only editing permission: ${description}`;document.getElementById('permission-pin-input').value='';document.getElementById('permission-error-msg').style.display='none';openModal('modal-permission');
+};
+const confirmPermissionBeforeOwnerPolicy=confirmPermissionAction;
+confirmPermissionAction=function(){
+    if(!pendingOwnerOnlyPermission)return confirmPermissionBeforeOwnerPolicy();
+    const pin=document.getElementById('permission-pin-input').value.trim();if(pin===(appData.masterPIN||'')){pendingOwnerOnlyPermission=false;closeModal('modal-permission');const cb=pendingActionCallback;pendingActionCallback=null;if(cb)cb();}else document.getElementById('permission-error-msg').style.display='block';
+};
+const openEditBeforeOwnerPolicy=openUniversalEditModal;
+openUniversalEditModal=function(type,id){if(currentUserRole!=='Owner'){alert('Read-only access: only the Owner can edit existing records. You may add new operational descriptions and assignments.');return;}return openEditBeforeOwnerPolicy(type,id);};
+function applyRoleAccessUI(){
+    const owner=currentUserRole==='Owner';document.querySelectorAll('.owner-edit-control,[onclick*="quickEditWorkerPIN"],[onclick*="openUniversalEditModal"]').forEach(el=>{el.disabled=!owner;el.classList.toggle('owner-only-disabled',!owner);el.title=owner?'Edit record':'Read-only — Owner editing rights required';});
+}
+const updateLoginBeforeOwnerUI=updateLoggedInBadge;
+updateLoggedInBadge=function(){updateLoginBeforeOwnerUI();applyRoleAccessUI();};
+
+// Auto-save every non-sensitive form draft, including detailed status options, without waiting for a final submit.
+let draftSaveTimer=null;
+function assignDraftKeys(){
+    document.querySelectorAll('.tab-content input,.tab-content textarea,.tab-content select').forEach((el,i)=>{if(el.type==='password'||el.type==='file'||el.readOnly||/^sync-/.test(el.id))return;const tab=el.closest('.tab-content')?.id||'app';el.dataset.draftKey=el.id||`${tab}-${el.tagName.toLowerCase()}-${i}`;});
+}
+function restoreAllDrafts(){assignDraftKeys();document.querySelectorAll('[data-draft-key]').forEach(el=>{const v=appData.formDrafts?.[el.dataset.draftKey];if(v!==undefined&&document.activeElement!==el)el.value=v;});}
+document.addEventListener('input',e=>{
+    const el=e.target;if(!el.dataset?.draftKey||!window.appUnlocked)return;appData.formDrafts[el.dataset.draftKey]=el.value;clearTimeout(draftSaveTimer);draftSaveTimer=setTimeout(()=>{addSystemActivity('Form draft auto-saved','Draft storage → current form → cross-device sync',el.closest('.tab-content')?.id||'Application form');localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));if(stateChannel)stateChannel.postMessage({data:appData,stamp:new Date().toISOString()});scheduleCloudPush();showSaveDestination('Draft storage → current form → synchronized devices');renderSystemActivity();},650);
+},true);
+document.addEventListener('change',e=>{if(e.target.dataset?.draftKey){appData.formDrafts[e.target.dataset.draftKey]=e.target.value;localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));scheduleCloudPush();}},true);
+
+const renderAllBeforeLinkedWork=renderAll;
+renderAll=function(){renderAllBeforeLinkedWork();renderTeamAssignments();renderSystemActivity();restoreAllDrafts();applyRoleAccessUI();if(selectedAssetId)loadAssetDetails(selectedAssetId);};
+
+const quickEditPINBeforeOwnerGuard=quickEditWorkerPIN;
+quickEditWorkerPIN=function(workerId){if(currentUserRole!=='Owner'){alert('Only the Owner can edit worker credentials.');return;}return quickEditPINBeforeOwnerGuard(workerId);};
+
+// Initial synchronized rendering.
+renderAll();
+
+
+
+/* =========================================================
+   COMPLETE EXPORT SUITE + EXACT SHIFT ROUTINES + SHIFT ADMIN
+   ========================================================= */
+const SHIFT_OPTIONS=[
+    {name:'General Shift',label:'General Shift (08:30 AM - 04:30 PM)',stored:'General Shift (08:30-16:30)'},
+    {name:'Shift A',label:'Shift A (08:00 AM - 03:30 PM)',stored:'Shift A (08:00-15:30)'},
+    {name:'Shift B',label:'Shift B (03:30 PM - 10:00 PM)',stored:'Shift B (15:30-22:00)'},
+    {name:'Shift C',label:'Shift C (10:00 PM - 08:00 AM)',stored:'Shift C (22:00-08:00)'}
+];
+function extractShiftName(value=''){return String(value).startsWith('General Shift')?'General Shift':(String(value).match(/Shift [ABC]/)?.[0]||'General Shift');}
+function normalizeStoredShift(value=''){const name=extractShiftName(value);return SHIFT_OPTIONS.find(x=>x.name===name)?.stored||SHIFT_OPTIONS[0].stored;}
+function getCurrentRoutineShift(date=new Date()){
+    const mins=date.getHours()*60+date.getMinutes();
+    if(mins>=8*60&&mins<15*60+30)return 'Shift A';
+    if(mins>=15*60+30&&mins<22*60)return 'Shift B';
+    return 'Shift C';
+}
+appData.staff.forEach(s=>s.shift=normalizeStoredShift(s.shift));
+appData.shiftDescriptions=appData.shiftDescriptions||{};appData.shiftDescriptions.General=appData.shiftDescriptions.General||'';
+appData.shiftEditGrants=appData.shiftEditGrants||{};
+localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
+
+const saveShiftDescriptionsBeforeGeneral=saveShiftDescriptions;
+saveShiftDescriptions=function(){
+    appData.shiftDescriptions={General:document.getElementById('shift-desc-general')?.value.trim()||'',A:document.getElementById('shift-desc-a').value.trim(),B:document.getElementById('shift-desc-b').value.trim(),C:document.getElementById('shift-desc-c').value.trim()};
+    setSaveContext('Shift descriptions saved','General Shift + Shift A/B/C logs → central database → sync','All four shift description columns updated.');saveState();
+};
+const loadDescriptionsBeforeGeneral=loadPersistentDescriptionBoxes;
+loadPersistentDescriptionBoxes=function(){loadDescriptionsBeforeGeneral();const g=document.getElementById('shift-desc-general');if(g)g.value=appData.shiftDescriptions?.General||'';};
+
+function currentStaffRecord(){return appData.staff.find(s=>s.name===currentUserName);}
+function canManageWorkerShifts(){const me=currentStaffRecord();return currentUserRole==='Owner'||!!(me&&appData.shiftEditGrants?.[me.id]);}
+function shiftSelectHTML(staff){const allowed=canManageWorkerShifts();return `<select class="form-control shift-admin-select" ${allowed?'':'disabled'} onchange="updateWorkerShift('${staff.id}',this.value)">${SHIFT_OPTIONS.map(x=>`<option value="${x.stored}" ${extractShiftName(staff.shift)===x.name?'selected':''}>${x.label}</option>`).join('')}</select>`;}
+function updateWorkerShift(staffId,newShift){
+    if(!canManageWorkerShifts()){alert('Shift assignment is read-only. Owner permission is required.');renderStaff('all');return;}
+    const worker=appData.staff.find(s=>s.id===staffId);if(!worker)return;const old=worker.shift;worker.shift=normalizeStoredShift(newShift);
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift:'General Shift',tech:currentUserName,asset:'Employee Duty Roster',type:'Worker Shift Updated',desc:`${worker.name}: ${old} → ${worker.shift}`,supv:currentUserName,status:'Updated'});
+    setSaveContext('Worker shift updated',`Employee Roster → Attendance → Duty Roster Export → History → Sync`,`${worker.name}: ${worker.shift}`);saveState();
+}
+function editEmployeeRecord(staffId){
+    if(currentUserRole!=='Owner'){alert('Only the Owner can edit employee records.');return;}
+    const worker=appData.staff.find(s=>s.id===staffId);if(!worker)return;const oldName=worker.name;
+    const name=prompt('Employee full name:',worker.name);if(!name)return;
+    const role=prompt('Role (Engineer, Supervisor, Technical Officer, or Technician):',worker.role);if(!role)return;
+    const contact=prompt('Contact / extension:',worker.contact)||worker.contact;
+    const status=prompt('Employment status:',worker.status)||worker.status;
+    worker.name=name.trim();worker.role=role.trim();worker.contact=contact.trim();worker.status=status.trim();
+    appData.taskAssignments.forEach(t=>{if(t.assigneeId===worker.id)t.assignee=worker.name;if(t.assignedBy===oldName)t.assignedBy=worker.name;});
+    setSaveContext('Employee record edited','Employee Roster → Attendance → Assignments → Duty Roster Export → Sync',`${oldName} → ${worker.name}`);saveState();
+}
+function toggleShiftEditGrant(staffId){
+    if(currentUserRole!=='Owner'){alert('Only the Owner can grant shift-edit permission.');return;}
+    appData.shiftEditGrants[staffId]=!appData.shiftEditGrants[staffId];const worker=appData.staff.find(s=>s.id===staffId);
+    setSaveContext(appData.shiftEditGrants[staffId]?'Shift-edit permission granted':'Shift-edit permission revoked','Role Permissions → Employee Roster → Sync',worker?.name||staffId);saveState();
+}
+renderStaff=function(filter='all'){
+    const tbody=document.getElementById('staff-table-body');if(!tbody)return;
+    const list=filter==='all'?appData.staff:appData.staff.filter(s=>filter==='leadership'?['Engineer','Supervisor'].includes(s.role):(filter==='officer'?s.role==='Technical Officer':s.role==='Technician'));
+    tbody.innerHTML=list.map(s=>`<tr><td><strong>${escapeHTML(s.id)}</strong></td><td><strong>${escapeHTML(s.name)}</strong></td><td><span class="status-badge ${s.role==='Engineer'?'purple':(s.role==='Supervisor'?'warning':'info')}">${escapeHTML(s.role)}</span></td><td>${shiftSelectHTML(s)}</td><td><code>${s.name===appData.masterOwnerName?'••••':escapeHTML(s.pin||'None')}</code></td><td>${escapeHTML(s.contact)}</td><td><span class="status-badge operational">${escapeHTML(s.status)}</span></td><td><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm owner-edit-control" onclick="editEmployeeRecord('${s.id}')" ${currentUserRole==='Owner'?'':'disabled'}>✏️ Edit</button><button class="btn btn-outline btn-sm owner-edit-control" onclick="quickEditWorkerPIN('${s.id}')" ${currentUserRole==='Owner'?'':'disabled'}>🔑 PIN</button>${currentUserRole==='Owner'&&s.name!==appData.masterOwnerName?`<button class="btn btn-sm ${appData.shiftEditGrants[s.id]?'btn-warning':'btn-outline'}" onclick="toggleShiftEditGrant('${s.id}')">${appData.shiftEditGrants[s.id]?'Revoke Shift Admin':'Grant Shift Admin'}</button>`:''}</div></td></tr>`).join('');
+    installTableExportButtons();
+};
+renderAttendanceSheet=function(){
+    const dateEl=document.getElementById('attendance-date'),body=document.getElementById('attendance-body');if(!dateEl||!body)return;if(!dateEl.value)dateEl.value=localISODate();const records=appData.attendance?.[dateEl.value]||{};
+    body.innerHTML=appData.staff.map(s=>`<tr><td><strong>${escapeHTML(s.name)}</strong></td><td>${shiftSelectHTML(s)}</td><td><select class="form-control attendance-select" data-staff-id="${s.id}"><option ${records[s.id]==='Present'?'selected':''}>Present</option><option ${records[s.id]==='Absent'?'selected':''}>Absent</option><option ${records[s.id]==='Leave'?'selected':''}>Leave</option><option ${records[s.id]==='Late'?'selected':''}>Late</option></select></td></tr>`).join('');installTableExportButtons();
+};
+
+// Owner can directly reassign existing team tasks; others retain their operational status permissions only.
+function reassignTeamTask(index){
+    if(currentUserRole!=='Owner'){alert('Only the Owner can reassign existing work.');return;}const task=appData.taskAssignments[index];if(!task)return;
+    const menu=appData.staff.map((s,i)=>`${i+1}. ${s.name} (${s.role})`).join('\n');const choice=parseInt(prompt(`Reassign ${task.id} to:\n${menu}`),10)-1;if(choice<0||!appData.staff[choice])return;const old=task.assignee,person=appData.staff[choice];task.assigneeId=person.id;task.assignee=person.name;task.updatedAt=localTimestamp();
+    setSaveContext('Work reassigned','Team Assignment Center → Worker Queue → History → Sync',`${task.id}: ${old} → ${person.name}`);saveState();
+}
+const renderAssignmentsBeforeReassign=renderTeamAssignments;
+renderTeamAssignments=function(){renderAssignmentsBeforeReassign();if(currentUserRole==='Owner')document.querySelectorAll('#team-assignments-body tr').forEach((row,i)=>{if(row.cells[7])row.cells[7].insertAdjacentHTML('beforeend',` <button class="btn btn-warning btn-sm" onclick="reassignTeamTask(${i})">Reassign</button>`);});installTableExportButtons();};
+
+/* ---------- Structured module exports ---------- */
+function cleanRows(rows){return rows.map(row=>{const out={};Object.entries(row||{}).forEach(([k,v])=>out[k]=Array.isArray(v)||typeof v==='object'&&v!==null?JSON.stringify(v):v??'');return out;});}
+function flattenAttendance(){const rows=[];Object.entries(appData.attendance||{}).forEach(([date,records])=>Object.entries(records).forEach(([staffId,status])=>{const s=appData.staff.find(x=>x.id===staffId);rows.push({Date:date,'Staff ID':staffId,Employee:s?.name||staffId,Shift:s?.shift||'',Attendance:status});}));return rows;}
+function moduleDatasets(){
+    const archive=appData.yearlyArchive||[],assets=appData.assets||[];
+    return {
+        'Checklists':archive.filter(x=>/Checklist|Filters Schedule|Compressors PM/i.test(x.type)),
+        'Attendance Logs':flattenAttendance(),
+        'Machines Data':assets.filter(x=>x.category==='husky'),
+        'Pumps Data':assets.filter(x=>/^CTP-|^CHW-/.test(x.id)),
+        'Cooling Tower Records':[...assets.filter(x=>x.category==='cooling'),...archive.filter(x=>/Cooling Tower/i.test(x.asset))],
+        'Chilled Water Records':[...assets.filter(x=>x.category==='chiller'),...archive.filter(x=>/Chilled Water|Chiller|CHW/i.test(x.asset))],
+        'Compressor Records':[...assets.filter(x=>x.category==='compressor'),...archive.filter(x=>/Atlas|Sierra|Compressor/i.test(x.asset))],
+        'Work Orders':appData.workOrders||[],
+        'Employee Duty Rosters':(appData.staff||[]).map(({pin,...staff})=>staff)
+    };
+}
+function safeFileName(name){return name.replace(/[^a-z0-9_-]+/gi,'_');}
+function exportRowsCSV(name,rows){rows=cleanRows(rows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}const headers=[...new Set(rows.flatMap(Object.keys))];const csv='\uFEFF'+headers.map(h=>`"${h.replace(/"/g,'""')}"`).join(',')+'\n'+rows.map(r=>headers.map(h=>`"${String(r[h]??'').replace(/"/g,'""')}"`).join(',')).join('\n');downloadBlob(csv,`${safeFileName(name)}_${localISODate()}.csv`,'text/csv;charset=utf-8');}
+function downloadBlob(content,name,type){const blob=content instanceof Blob?content:new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function xmlEscape(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function spreadsheetXML(sheets){let xml='<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';Object.entries(sheets).forEach(([name,input])=>{const rows=cleanRows(input),headers=[...new Set(rows.flatMap(Object.keys))];xml+=`<Worksheet ss:Name="${xmlEscape(name.slice(0,31))}"><Table><Row>${headers.map(h=>`<Cell><Data ss:Type="String">${xmlEscape(h)}</Data></Cell>`).join('')}</Row>`+rows.map(r=>`<Row>${headers.map(h=>`<Cell><Data ss:Type="String">${xmlEscape(r[h])}</Data></Cell>`).join('')}</Row>`).join('')+'</Table></Worksheet>';});return xml+'</Workbook>';}
+function exportRowsExcel(name,rows){rows=cleanRows(rows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name.slice(0,31));XLSX.writeFile(wb,`${safeFileName(name)}_${localISODate()}.xlsx`);}else downloadBlob(spreadsheetXML({[name]:rows}),`${safeFileName(name)}_${localISODate()}.xls`,'application/vnd.ms-excel');}
+function exportModule(name,format){const rows=moduleDatasets()[name]||[];format==='csv'?exportRowsCSV(name,rows):exportRowsExcel(name,rows);}
+function downloadAllMergedExcel(){
+    const modules=moduleDatasets();const sheets={Assets:appData.assets||[],...modules,'Team Assignments':appData.taskAssignments||[],Inventory:appData.spares||[],Tools:appData.tools||[],'Yearly Archive':appData.yearlyArchive||[],'System Activity':appData.systemActivity||[]};
+    if(window.XLSX){const wb=XLSX.utils.book_new();Object.entries(sheets).forEach(([name,rows])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(cleanRows(rows).length?cleanRows(rows):[{Message:'No records'}]),name.slice(0,31)));XLSX.writeFile(wb,`PlantMaster_All_Merged_Data_${localISODate()}.xlsx`);}else{downloadBlob(spreadsheetXML(sheets),`PlantMaster_All_Merged_Data_${localISODate()}.xls`,'application/vnd.ms-excel');showSaveDestination('Merged Excel-compatible workbook downloaded (offline fallback format)');}
+}
+function renderModuleExportGrid(){const grid=document.getElementById('module-export-grid');if(!grid)return;grid.innerHTML=Object.keys(moduleDatasets()).map(name=>`<div class="module-export-card"><strong>${escapeHTML(name)}</strong><div style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm" onclick="exportModule('${name}','csv')">CSV</button><button class="btn btn-primary btn-sm" onclick="exportModule('${name}','excel')">Excel</button></div></div>`).join('');}
+
+// Adds CSV and Excel controls to every rendered data table without changing the existing layout.
+function renderedTableRows(table){const headers=[...table.querySelectorAll('thead th')].map(x=>x.innerText.trim());return [...table.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none').map(r=>{const cells=[...r.cells];const obj={};headers.forEach((h,i)=>obj[h||`Column ${i+1}`]=cells[i]?.innerText.trim()||'');return obj;});}
+function exportRenderedTable(button,format){const table=button.closest('.table-container').querySelector('table');const title=button.dataset.exportName||'Table Data';const rows=renderedTableRows(table);format==='csv'?exportRowsCSV(title,rows):exportRowsExcel(title,rows);}
+function installTableExportButtons(){document.querySelectorAll('.table-container').forEach((container,i)=>{const table=container.querySelector(':scope > table');if(!table||container.querySelector(':scope > .table-export-bar'))return;const heading=container.closest('.card')?.querySelector('h4,h3')?.innerText.trim()||`Table ${i+1}`;const bar=document.createElement('div');bar.className='table-export-bar';bar.innerHTML=`<button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,'csv')">⬇ CSV</button><button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,'excel')">⬇ Excel</button>`;container.insertBefore(bar,table);});}
+
+const renderAllBeforeExportsAndShifts=renderAll;
+renderAll=function(){renderAllBeforeExportsAndShifts();renderModuleExportGrid();renderTeamAssignments();renderStaff('all');renderAttendanceSheet();loadPersistentDescriptionBoxes();installTableExportButtons();};
+
+// Select the active A/B/C routine on first use while preserving General Shift as an explicit option.
+document.addEventListener('DOMContentLoaded',()=>{const active=getCurrentRoutineShift();['daily-shift-select','weekly-shift-select','monthly-shift-select'].forEach(id=>{const el=document.getElementById(id);if(el&&!appData.formDrafts?.[id]){const opt=[...el.options].find(o=>extractShiftName(o.value)===active);if(opt)el.value=opt.value;}});renderAll();});
+renderAll();
+
+
+/* =========================================================
+   WORD/PDF EXPORTS, FULL DAILY CHECKLIST & OWNER PIN SETTINGS
+   ========================================================= */
+function controlValues(root){return [...root.querySelectorAll('input,select,textarea')].map(el=>el.type==='checkbox'?(el.checked?'Checked':'Not checked'):el.value).filter(v=>v!=='' ).join(' | ');}
+function collectCompleteDailyChecklist(){
+    const root=document.getElementById('tab-checklists-daily');if(!root)return [];
+    const stamp=localTimestamp();const rows=[];
+    const add=(section,item,parameter,value,status='',note='')=>rows.push({Timestamp:stamp,Shift:extractShiftName(document.getElementById('daily-shift-select')?.value||''),Technician:document.getElementById('daily-tech-select')?.value||'',Supervisor:document.getElementById('daily-supv-select')?.value||'',Section:section,Item:item,Parameter:parameter,Value:value,Status:status,Note:note});
+    add('Submission Metadata','Daily Checklist','Selected shift',document.getElementById('daily-shift-select')?.value||'');
+    add('Submission Metadata','Daily Checklist','Description / Shift Remarks',document.getElementById('daily-desc-box')?.value||'','',document.getElementById('daily-desc-box')?.value||'');
+    ['General','A','B','C'].forEach(key=>{const id=key==='General'?'shift-desc-general':`shift-desc-${key.toLowerCase()}`;add('Shift Log Descriptions',`${key==='General'?'General Shift':'Shift '+key}`,'Full shift description',document.getElementById(id)?.value||'','',document.getElementById(id)?.value||'');});
+    root.querySelectorAll('.param-row').forEach((row,index)=>{
+        const section=row.closest('.card')?.querySelector('h4')?.innerText.trim()||row.closest('div')?.querySelector('h5')?.innerText.trim()||'Daily Parameters';
+        const parameter=row.querySelector('.param-label')?.innerText.trim()||`Parameter ${index+1}`;
+        const value=controlValues(row)||row.innerText.replace(parameter,'').trim();
+        const status=[...row.querySelectorAll('.status-selector')].map(x=>x.value).join(' | ');
+        add(section,parameter,parameter,value,status,'');
+    });
+    root.querySelectorAll('.checklist-section table').forEach(table=>{
+        const section=table.closest('.card')?.querySelector('h4')?.innerText.trim()||'Checklist Table';
+        const headers=[...table.querySelectorAll('thead th')].map(x=>x.innerText.trim());
+        table.querySelectorAll('tbody tr').forEach((tr,rowIndex)=>{
+            const item=tr.cells[0]?.innerText.trim()||`Item ${rowIndex+1}`;
+            [...tr.cells].forEach((cell,colIndex)=>{
+                const controls=controlValues(cell);const text=cell.innerText.trim();const value=controls||text;
+                add(section,item,headers[colIndex]||`Field ${colIndex+1}`,value,cell.querySelector('.status-badge')?.innerText.trim()||cell.querySelector('.status-selector')?.value||'',text);
+            });
+        });
+    });
+    // Exhaustive field inventory guarantees that no current checklist control is omitted.
+    root.querySelectorAll('input,select,textarea').forEach((el,index)=>{
+        const label=el.id?(root.querySelector(`label[for="${el.id}"]`)?.innerText.trim()||el.id):(el.closest('.param-row')?.querySelector('.param-label')?.innerText.trim()||el.getAttribute('placeholder')||`Checklist control ${index+1}`);
+        const value=el.type==='checkbox'?(el.checked?'Checked':'Not checked'):el.value;
+        const section=el.closest('.checklist-section')?.querySelector('h4')?.innerText.trim()||el.closest('.shift-submission-box,.card')?.querySelector('h4')?.innerText.trim()||'Daily Checklist Full Field Inventory';
+        add(section,label,'Raw checklist field',value,el.classList.contains('status-selector')?el.value:'',el.getAttribute('placeholder')||'');
+    });
+    root.querySelectorAll('.checklist-section h4,.checklist-section h5').forEach((heading,index)=>add('Checklist Task Register',`Task ${index+1}`,'Task / section heading',heading.innerText.trim(),'Included',''));
+    return rows;
+}
+
+async function ensureExportLibrary(check,url){if(check())return true;return new Promise(resolve=>{const script=document.createElement('script');script.src=url;script.onload=()=>resolve(check());script.onerror=()=>resolve(false);document.head.appendChild(script);});}
+async function exportRowsWord(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    const ready=await ensureExportLibrary(()=>!!window.docx,'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');if(!ready){alert('Word export library could not load. Check internet access and try again.');return;}
+    const headers=[...new Set(rows.flatMap(Object.keys))];const D=window.docx;
+    const tableRows=[new D.TableRow({children:headers.map(h=>new D.TableCell({children:[new D.Paragraph({children:[new D.TextRun({text:String(h),bold:true})]})]}))}),...rows.map(r=>new D.TableRow({children:headers.map(h=>new D.TableCell({children:[new D.Paragraph(String(r[h]??''))]}))}))];
+    const documentFile=new D.Document({sections:[{children:[new D.Paragraph({text:name,heading:D.HeadingLevel.TITLE}),new D.Paragraph(`Exported: ${localTimestamp()}`),new D.Table({rows:tableRows,width:{size:100,type:D.WidthType.PERCENTAGE}})]}]});
+    const blob=await D.Packer.toBlob(documentFile);downloadBlob(blob,`${safeFileName(name)}_${localISODate()}.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+}
+async function exportRowsPDF(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    const jsReady=await ensureExportLibrary(()=>!!window.jspdf?.jsPDF,'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+    if(!jsReady){alert('PDF export library could not load. Check internet access and try again.');return;}
+    if(!window.jspdf.jsPDF.API.autoTable)await ensureExportLibrary(()=>!!window.jspdf.jsPDF.API.autoTable,'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+    const headers=[...new Set(rows.flatMap(Object.keys))];const doc=new window.jspdf.jsPDF({orientation:headers.length>5?'landscape':'portrait',unit:'pt',format:'a4'});
+    doc.setFontSize(14);doc.text(name,30,30);doc.setFontSize(8);doc.text(`Exported: ${localTimestamp()} • Complete records: ${rows.length}`,30,44);
+    doc.autoTable({startY:54,head:[headers],body:rows.map(r=>headers.map(h=>String(r[h]??''))),styles:{fontSize:6,cellPadding:2,overflow:'linebreak'},headStyles:{fillColor:[37,99,235]},horizontalPageBreak:true,showHead:'everyPage',margin:{left:20,right:20}});
+    doc.save(`${safeFileName(name)}_${localISODate()}.pdf`);
+}
+async function exportRowsByFormat(name,rows,format){if(format==='csv')return exportRowsCSV(name,rows);if(format==='excel')return exportRowsExcel(name,rows);if(format==='word')return exportRowsWord(name,rows);if(format==='pdf')return exportRowsPDF(name,rows);}
+
+const moduleDatasetsFourFormats=moduleDatasets;
+moduleDatasets=function(){const base=moduleDatasetsFourFormats();const complete=collectCompleteDailyChecklist();base['Complete Daily Checklist']=complete;base.Checklists=[...complete,...(base.Checklists||[])];return base;};
+exportModule=function(name,format){return exportRowsByFormat(name,moduleDatasets()[name]||[],format);};
+renderModuleExportGrid=function(){
+    const grid=document.getElementById('module-export-grid');if(!grid)return;
+    const names=['Complete Daily Checklist','Checklists','Attendance Logs','Machines Data','Pumps Data','Cooling Tower Records','Chilled Water Records','Compressor Records','Work Orders','Employee Duty Rosters'];
+    grid.innerHTML=names.map((name,i)=>`<div class="module-export-card"><strong>${escapeHTML(name)}</strong><div style="display:flex;gap:6px;align-items:center;"><select id="module-format-${i}" class="form-control" style="width:105px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-primary btn-sm" onclick="exportModule('${name}',document.getElementById('module-format-${i}').value)">Download</button></div></div>`).join('');
+};
+
+function allMergedSheets(){const modules=moduleDatasets();return {Assets:appData.assets||[],...modules,'Team Assignments':appData.taskAssignments||[],Inventory:appData.spares||[],Tools:appData.tools||[],'Yearly Archive':appData.yearlyArchive||[],'System Activity':appData.systemActivity||[]};}
+async function downloadAllMerged(format='excel'){
+    const sheets=allMergedSheets();if(format==='excel')return downloadAllMergedExcel();
+    const merged=[];Object.entries(sheets).forEach(([module,rows])=>cleanRows(rows).forEach(row=>merged.push({Module:module,...row})));
+    return exportRowsByFormat('PlantMaster All Merged Data',merged,format);
+}
+
+installTableExportButtons=function(){
+    document.querySelectorAll('.table-container').forEach((container,i)=>{
+        const table=container.querySelector(':scope > table');if(!table)return;container.querySelector(':scope > .table-export-bar')?.remove();
+        const heading=container.closest('.card')?.querySelector('h4,h3')?.innerText.trim()||`Table ${i+1}`;const id=`table-format-${i}`;
+        const bar=document.createElement('div');bar.className='table-export-bar';bar.innerHTML=`<select id="${id}" class="form-control" style="width:105px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,document.getElementById('${id}').value)">⬇ Download</button>`;container.insertBefore(bar,table);
+    });
+};
+exportRenderedTable=function(button,format){const table=button.closest('.table-container').querySelector('table');return exportRowsByFormat(button.dataset.exportName||'Table Data',renderedTableRows(table),format);};
+
+const renderAllBeforeFourFormatExports=renderAll;
+renderAll=function(){renderAllBeforeFourFormatExports();renderModuleExportGrid();installTableExportButtons();};
+renderAll();
+
+
+
+/* =========================================================
+   PROGRESSIVE WEB APP INSTALLATION & OFFLINE APP SHELL
+   ========================================================= */
+let deferredPWAInstallPrompt=null;
+function isPWAStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}
+window.addEventListener('beforeinstallprompt',event=>{
+    event.preventDefault();deferredPWAInstallPrompt=event;
+    const button=document.getElementById('pwa-install-button');if(button&&!isPWAStandalone())button.style.display='inline-flex';
+});
+async function installPlantMasterPWA(){
+    if(deferredPWAInstallPrompt){
+        deferredPWAInstallPrompt.prompt();const choice=await deferredPWAInstallPrompt.userChoice;
+        if(choice.outcome==='accepted'){document.getElementById('pwa-install-button').style.display='none';}
+        deferredPWAInstallPrompt=null;return;
+    }
+    const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    alert(ios?'To install PlantMaster Pro: open this site in Safari, tap Share, then choose “Add to Home Screen”.':'Open this site in Chrome or Edge over HTTPS, open the browser menu, and choose “Install app” or “Add to Home screen”.');
+}
+window.addEventListener('appinstalled',()=>{const button=document.getElementById('pwa-install-button');if(button)button.style.display='none';showSaveDestination('PlantMaster Pro installed successfully');});
+if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).then(registration=>{
+        console.info('PlantMaster PWA service worker active:',registration.scope);
+        registration.update();
+    }).catch(error=>console.warn('PWA service worker registration failed:',error)));
+}
+document.addEventListener('DOMContentLoaded',()=>{if(isPWAStandalone()){const button=document.getElementById('pwa-install-button');if(button)button.style.display='none';}});
+
 </script>
+<div id="save-destination-toast" class="save-destination-toast" role="status" aria-live="polite"></div>
 </body>
 </html>
