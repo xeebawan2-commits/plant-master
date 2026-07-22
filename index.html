@@ -540,7 +540,8 @@
                     <span id="overdue-header-count" style="color:#ff6b6b; font-weight:800;">3 Red Marks</span>
                 </div>
                 <button id="pwa-install-button" class="btn btn-success btn-sm" onclick="installPlantMasterPWA()" style="display:none;" title="Install PlantMaster Pro on this device">⬇ Install App</button>
-                <button class="btn btn-outline btn-sm" onclick="lockApplication()" title="Lock and require PIN again">🔒 Lock</button>
+                <button class="btn btn-danger btn-sm" onclick="logoutApplication()" title="Logout and release this PIN for another device">↪ Logout</button>
+                <button class="btn btn-outline btn-sm" onclick="lockApplication()" title="Lock this screen without ending the device session">🔒 Lock</button>
                 <button class="btn btn-primary btn-sm" onclick="openLogCycleModal()" title="Log Cycles">+ Cycles</button>
             </div>
         </header>
@@ -628,6 +629,7 @@
                         <select id="detail-asset-selector" class="form-control" style="width:220px;" onchange="loadAssetDetails(this.value)"></select>
                         <button id="detail-power-toggle" class="asset-power-btn off" onclick="toggleAssetPower(selectedAssetId, event)">Shutdown</button>
                         <button class="btn btn-outline btn-sm" onclick="openUniversalEditModal('asset', selectedAssetId)">✏️ Edit Info</button>
+                        <button class="btn btn-danger btn-sm owner-edit-control" onclick="removeAssetRecord(selectedAssetId)">🗑 Remove Asset</button>
                         <button class="btn btn-primary btn-sm" onclick="openLogCycleModal()">+ Log Cycles</button>
                     </div>
                 </div>
@@ -667,7 +669,7 @@
                             </select>
                             <select class="form-control" style="width:115px;" id="detail-shift-filter" onchange="filterAssetHistory()">
                                 <option value="All">All Shifts</option><option value="General Shift">General Shift</option><option value="Shift A">Shift A</option><option value="Shift B">Shift B</option><option value="Shift C">Shift C</option>
-                            </select>
+                            <option value="Rest / Off">Rest / Off</option></select>
                         </div>
                     </div>
                     <div class="table-container">
@@ -702,7 +704,7 @@
                                 <option value="Shift A (08:00 AM - 03:30 PM)">Shift A (08:00 AM - 03:30 PM)</option>
                                 <option value="Shift B (03:30 PM - 10:00 PM)">Shift B (03:30 PM - 10:00 PM)</option>
                                 <option value="Shift C (10:00 PM - 08:00 AM)">Shift C (10:00 PM - 08:00 AM)</option>
-                            </select>
+                            <option value="Rest / Off">Rest / Off</option></select>
                         </div>
                         <div>
                             <label class="form-label">Inspecting Worker (Auto-Locked from PIN)</label>
@@ -730,6 +732,7 @@
                         <div><label class="form-label">Shift A Description</label><textarea id="shift-desc-a" class="form-control" rows="3" placeholder="Shift A problem / solution..."></textarea></div>
                         <div><label class="form-label">Shift B Description</label><textarea id="shift-desc-b" class="form-control" rows="3" placeholder="Shift B problem / solution..."></textarea></div>
                         <div><label class="form-label">Shift C Description</label><textarea id="shift-desc-c" class="form-control" rows="3" placeholder="Shift C problem / solution..."></textarea></div>
+                        <div><label class="form-label">Rest / Off Description</label><textarea id="shift-desc-rest" class="form-control" rows="3" placeholder="Rest day, off duty, relief coverage or handover note..."></textarea></div>
                     </div>
                 </div>
 
@@ -857,7 +860,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <h4 style="color:var(--accent-success); font-size:13.5px;">📌 Weekly Filters Submission & Remarks Panel (A, B, C Shift Sign-off)</h4>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <select id="weekly-shift-select" class="form-control" style="width:150px;"><option value="General Shift (08:30 AM - 04:30 PM)">General Shift (08:30 AM - 04:30 PM)</option><option value="Shift A (Morning)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (Evening)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (Night)">Shift C (10:00 PM - 08:00 AM)</option></select>
+                            <select id="weekly-shift-select" class="form-control" style="width:150px;"><option value="General Shift (08:30 AM - 04:30 PM)">General Shift (08:30 AM - 04:30 PM)</option><option value="Shift A (Morning)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (Evening)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (Night)">Shift C (10:00 PM - 08:00 AM)</option><option value="Rest / Off">Rest / Off</option></select>
                             <input type="text" id="weekly-tech-select" class="form-control" value="Haseeb Awan" readonly style="width:160px;">
                         </div>
                     </div>
@@ -947,7 +950,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <h4 style="color:var(--accent-purple); font-size:13.5px;">📌 Monthly Compressor PM Submission & Remarks Panel</h4>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <select id="monthly-shift-select" class="form-control" style="width:150px;"><option value="General Shift (08:30 AM - 04:30 PM)">General Shift (08:30 AM - 04:30 PM)</option><option value="Shift A (Morning)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (Evening)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (Night)">Shift C (10:00 PM - 08:00 AM)</option></select>
+                            <select id="monthly-shift-select" class="form-control" style="width:150px;"><option value="General Shift (08:30 AM - 04:30 PM)">General Shift (08:30 AM - 04:30 PM)</option><option value="Shift A (Morning)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (Evening)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (Night)">Shift C (10:00 PM - 08:00 AM)</option><option value="Rest / Off">Rest / Off</option></select>
                             <input type="text" id="monthly-tech-select" class="form-control" value="Haseeb Awan" readonly style="width:160px;">
                         </div>
                     </div>
@@ -1031,7 +1034,7 @@
                             </div>
                             <div>
                                 <label class="form-label" style="font-size:11px;">Filter Shift</label>
-                                <select id="archive-shift-select" class="form-control" style="width:125px;" onchange="renderYearlyArchive()"><option value="All">All Shifts</option><option value="General Shift">General Shift</option><option value="Shift A">Shift A</option><option value="Shift B">Shift B</option><option value="Shift C">Shift C</option></select>
+                                <select id="archive-shift-select" class="form-control" style="width:125px;" onchange="renderYearlyArchive()"><option value="All">All Shifts</option><option value="General Shift">General Shift</option><option value="Shift A">Shift A</option><option value="Shift B">Shift B</option><option value="Shift C">Shift C</option><option value="Rest / Off">Rest / Off</option></select>
                             </div>
                             <div>
                                 <label class="form-label" style="font-size:11px;">Filter Category</label>
@@ -1534,7 +1537,7 @@ The application will report “Setup Required” if this table has not yet been 
                 <label class="form-label">Assigned Shift</label>
                 <select id="staff-shift" class="form-control">
                     <option value="Shift A (08:00-15:30)">Shift A (08:00 AM - 03:30 PM)</option><option value="Shift B (15:30-22:00)">Shift B (03:30 PM - 10:00 PM)</option><option value="Shift C (22:00-08:00)">Shift C (10:00 PM - 08:00 AM)</option><option value="General Shift (08:30-16:30)">General Shift (08:30 AM - 04:30 PM)</option>
-                </select>
+                <option value="Rest / Off">Rest / Off</option></select>
             </div>
             <div class="form-group">
                 <label class="form-label">Contact / Extension</label>
@@ -3513,9 +3516,10 @@ const SHIFT_OPTIONS=[
     {name:'General Shift',label:'General Shift (08:30 AM - 04:30 PM)',stored:'General Shift (08:30-16:30)'},
     {name:'Shift A',label:'Shift A (08:00 AM - 03:30 PM)',stored:'Shift A (08:00-15:30)'},
     {name:'Shift B',label:'Shift B (03:30 PM - 10:00 PM)',stored:'Shift B (15:30-22:00)'},
-    {name:'Shift C',label:'Shift C (10:00 PM - 08:00 AM)',stored:'Shift C (22:00-08:00)'}
+    {name:'Shift C',label:'Shift C (10:00 PM - 08:00 AM)',stored:'Shift C (22:00-08:00)'},
+    {name:'Rest / Off',label:'Rest / Off',stored:'Rest / Off'}
 ];
-function extractShiftName(value=''){return String(value).startsWith('General Shift')?'General Shift':(String(value).match(/Shift [ABC]/)?.[0]||'General Shift');}
+function extractShiftName(value=''){const text=String(value);if(/Rest|Off/i.test(text))return 'Rest / Off';return text.startsWith('General Shift')?'General Shift':(text.match(/Shift [ABC]/)?.[0]||'General Shift');}
 function normalizeStoredShift(value=''){const name=extractShiftName(value);return SHIFT_OPTIONS.find(x=>x.name===name)?.stored||SHIFT_OPTIONS[0].stored;}
 function getCurrentRoutineShift(date=new Date()){
     const mins=date.getHours()*60+date.getMinutes();
@@ -3524,17 +3528,17 @@ function getCurrentRoutineShift(date=new Date()){
     return 'Shift C';
 }
 appData.staff.forEach(s=>s.shift=normalizeStoredShift(s.shift));
-appData.shiftDescriptions=appData.shiftDescriptions||{};appData.shiftDescriptions.General=appData.shiftDescriptions.General||'';
+appData.shiftDescriptions=appData.shiftDescriptions||{};appData.shiftDescriptions.General=appData.shiftDescriptions.General||'';appData.shiftDescriptions.Rest=appData.shiftDescriptions.Rest||'';
 appData.shiftEditGrants=appData.shiftEditGrants||{};
 localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
 
 const saveShiftDescriptionsBeforeGeneral=saveShiftDescriptions;
 saveShiftDescriptions=function(){
-    appData.shiftDescriptions={General:document.getElementById('shift-desc-general')?.value.trim()||'',A:document.getElementById('shift-desc-a').value.trim(),B:document.getElementById('shift-desc-b').value.trim(),C:document.getElementById('shift-desc-c').value.trim()};
-    setSaveContext('Shift descriptions saved','General Shift + Shift A/B/C logs → central database → sync','All four shift description columns updated.');saveState();
+    appData.shiftDescriptions={General:document.getElementById('shift-desc-general')?.value.trim()||'',A:document.getElementById('shift-desc-a').value.trim(),B:document.getElementById('shift-desc-b').value.trim(),C:document.getElementById('shift-desc-c').value.trim(),Rest:document.getElementById('shift-desc-rest')?.value.trim()||''};
+    setSaveContext('Shift descriptions saved','General Shift + Shift A/B/C + Rest/Off logs → central database → sync','All five shift description columns updated.');saveState();
 };
 const loadDescriptionsBeforeGeneral=loadPersistentDescriptionBoxes;
-loadPersistentDescriptionBoxes=function(){loadDescriptionsBeforeGeneral();const g=document.getElementById('shift-desc-general');if(g)g.value=appData.shiftDescriptions?.General||'';};
+loadPersistentDescriptionBoxes=function(){loadDescriptionsBeforeGeneral();const g=document.getElementById('shift-desc-general'),r=document.getElementById('shift-desc-rest');if(g)g.value=appData.shiftDescriptions?.General||'';if(r)r.value=appData.shiftDescriptions?.Rest||'';};
 
 function currentStaffRecord(){return appData.staff.find(s=>s.name===currentUserName);}
 function canManageWorkerShifts(){const me=currentStaffRecord();return currentUserRole==='Owner'||!!(me&&appData.shiftEditGrants?.[me.id]);}
@@ -3634,7 +3638,7 @@ function collectCompleteDailyChecklist(){
     const add=(section,item,parameter,value,status='',note='')=>rows.push({Timestamp:stamp,Shift:extractShiftName(document.getElementById('daily-shift-select')?.value||''),Technician:document.getElementById('daily-tech-select')?.value||'',Supervisor:document.getElementById('daily-supv-select')?.value||'',Section:section,Item:item,Parameter:parameter,Value:value,Status:status,Note:note});
     add('Submission Metadata','Daily Checklist','Selected shift',document.getElementById('daily-shift-select')?.value||'');
     add('Submission Metadata','Daily Checklist','Description / Shift Remarks',document.getElementById('daily-desc-box')?.value||'','',document.getElementById('daily-desc-box')?.value||'');
-    ['General','A','B','C'].forEach(key=>{const id=key==='General'?'shift-desc-general':`shift-desc-${key.toLowerCase()}`;add('Shift Log Descriptions',`${key==='General'?'General Shift':'Shift '+key}`,'Full shift description',document.getElementById(id)?.value||'','',document.getElementById(id)?.value||'');});
+    ['General','A','B','C','Rest'].forEach(key=>{const id=key==='General'?'shift-desc-general':(key==='Rest'?'shift-desc-rest':`shift-desc-${key.toLowerCase()}`);add('Shift Log Descriptions',`${key==='General'?'General Shift':(key==='Rest'?'Rest / Off':'Shift '+key)}`,'Full shift description',document.getElementById(id)?.value||'','',document.getElementById(id)?.value||'');});
     root.querySelectorAll('.param-row').forEach((row,index)=>{
         const section=row.closest('.card')?.querySelector('h4')?.innerText.trim()||row.closest('div')?.querySelector('h5')?.innerText.trim()||'Daily Parameters';
         const parameter=row.querySelector('.param-label')?.innerText.trim()||`Parameter ${index+1}`;
@@ -3742,6 +3746,174 @@ if('serviceWorker' in navigator){
     }).catch(error=>console.warn('PWA service worker registration failed:',error)));
 }
 document.addEventListener('DOMContentLoaded',()=>{if(isPWAStandalone()){const button=document.getElementById('pwa-install-button');if(button)button.style.display='none';}});
+
+
+
+/* =========================================================
+   OWNER-ONLY REMOVE CONTROLS FOR EDITABLE/CREATABLE RECORDS
+   ========================================================= */
+function ownerDeleteAllowed(){if(currentUserRole!=='Owner'){alert('Only the Owner can delete or remove existing records.');return false;}return true;}
+function removeArchiveRecord(recordId){if(!ownerDeleteAllowed())return;const i=appData.yearlyArchive.findIndex(x=>x.id===recordId);if(i<0)return;const item=appData.yearlyArchive[i];if(!confirm(`Remove historical record ${item.id}?`))return;appData.yearlyArchive.splice(i,1);setSaveContext('History record removed','Yearly Archive → Audit Activity → Sync',`${item.id}: ${item.type}`);saveState();}
+function removeWorkOrderRecord(workOrderId){if(!ownerDeleteAllowed())return;const i=appData.workOrders.findIndex(x=>x.id===workOrderId);if(i<0)return;const item=appData.workOrders[i];if(!confirm(`Remove work order ${item.id}?`))return;appData.workOrders.splice(i,1);setSaveContext('Work order removed','Work Orders → Activity → Sync',`${item.id}: ${item.asset}`);saveState();}
+function removeTeamAssignmentRecord(taskId){if(!ownerDeleteAllowed())return;const i=appData.taskAssignments.findIndex(x=>x.id===taskId);if(i<0)return;const item=appData.taskAssignments[i];if(!confirm(`Remove assignment ${item.id}?`))return;appData.taskAssignments.splice(i,1);setSaveContext('Team assignment removed','Assignment Center → Activity → Sync',`${item.id}: ${item.assignee}`);saveState();}
+function removeStaffRecord(staffId){
+    if(!ownerDeleteAllowed())return;const i=appData.staff.findIndex(x=>x.id===staffId);if(i<0)return;const item=appData.staff[i];
+    if(item.name===appData.masterOwnerName){alert('The Master Owner account cannot be removed. Transfer ownership first.');return;}
+    if(!confirm(`Remove ${item.name} from the employee roster? Their historical logs will be retained.`))return;
+    appData.staff.splice(i,1);appData.taskAssignments.forEach(t=>{if(t.assigneeId===staffId){t.assigneeId='';t.assignee='Unassigned';}});Object.values(appData.attendance||{}).forEach(day=>delete day[staffId]);delete appData.shiftEditGrants?.[staffId];
+    setSaveContext('Employee removed','Roster → Attendance → Assignments → Activity → Sync',`${item.id}: ${item.name}`);saveState();
+}
+function removeAssetRecord(assetId){
+    if(!ownerDeleteAllowed())return;const i=appData.assets.findIndex(x=>x.id===assetId);if(i<0)return;const item=appData.assets[i];
+    if(!confirm(`Remove ${item.name} and its active work links? Historical audit entries will remain.`))return;
+    appData.assets.splice(i,1);appData.workOrders=appData.workOrders.filter(x=>x.asset!==item.name);appData.taskAssignments=appData.taskAssignments.filter(x=>x.assetId!==assetId);appData.spares.forEach(x=>{if(x.asset===item.name)x.asset='Unassigned Asset';});
+    selectedAssetId=appData.assets[0]?.id||'';setSaveContext('Asset removed','Asset Directory → Work Orders → Assignments → Activity → Sync',`${item.id}: ${item.name}`);saveState();switchTab('dashboard');
+}
+function removeCurrentEditedRecord(){if(currentEditType==='asset')return removeAssetRecord(currentEditIndex);if(currentEditType==='archive'){const item=appData.yearlyArchive[currentEditIndex];if(item)return removeArchiveRecord(item.id);}}
+function appendRemoveButton(cell,key,handler){if(!cell||cell.querySelector(`[data-remove-key="${key}"]`))return;const button=document.createElement('button');button.className='btn btn-danger btn-sm owner-delete-control';button.dataset.removeKey=key;button.textContent='🗑 Remove';button.disabled=currentUserRole!=='Owner';button.onclick=handler;cell.append(' ',button);}
+function decorateRemoveControls(){
+    document.querySelectorAll('#work-orders-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim();if(id)appendRemoveButton(row.cells[row.cells.length-1],`wo-${id}`,()=>removeWorkOrderRecord(id));});
+    document.querySelectorAll('#team-assignments-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim().split(/\s/)[0];if(id?.startsWith('TASK-'))appendRemoveButton(row.cells[row.cells.length-1],`task-${id}`,()=>removeTeamAssignmentRecord(id));});
+    document.querySelectorAll('#staff-table-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim();if(id)appendRemoveButton(row.cells[row.cells.length-1],`staff-${id}`,()=>removeStaffRecord(id));});
+    document.querySelectorAll('#worker-pins-body tr').forEach(row=>{const name=row.cells[0]?.innerText.trim(),staff=appData.staff.find(x=>x.name===name);if(staff&&staff.name!==appData.masterOwnerName)appendRemoveButton(row.cells[row.cells.length-1],`pin-staff-${staff.id}`,()=>removeStaffRecord(staff.id));});
+    ['#yearly-archive-body','#detail-history-body'].forEach(selector=>document.querySelectorAll(`${selector} tr`).forEach(row=>{const edit=row.querySelector('button[onclick*="openUniversalEditModal"]');const match=edit?.getAttribute('onclick')?.match(/archive'\s*,\s*'([^']+)'/);if(match)appendRemoveButton(row.cells[row.cells.length-1],`archive-${match[1]}`,()=>removeArchiveRecord(match[1]));}));
+    const modalSave=document.querySelector('#modal-edit-universal .btn-primary');if(modalSave&&!document.getElementById('universal-delete-button')){const b=document.createElement('button');b.id='universal-delete-button';b.className='btn btn-danger owner-delete-control';b.textContent='🗑 Remove Record';b.onclick=removeCurrentEditedRecord;modalSave.parentElement.insertBefore(b,modalSave);}
+    document.querySelectorAll('.owner-delete-control').forEach(b=>b.disabled=currentUserRole!=='Owner');
+}
+
+
+
+/* =========================================================
+   ONE-PIN / ONE-DEVICE ACTIVE SESSION ENFORCEMENT
+   ========================================================= */
+const DEVICE_ID_KEY='PlantMasterPro_DeviceId';
+const DEVICE_SESSION_KEY='PlantMasterPro_ActiveDeviceSession';
+const SESSION_TTL_MS=4*60*1000;
+const deviceId=localStorage.getItem(DEVICE_ID_KEY)||(`DEV-${crypto.randomUUID?.()||Date.now()+'-'+Math.random().toString(36).slice(2)}`);
+localStorage.setItem(DEVICE_ID_KEY,deviceId);
+let activeDeviceSession=JSON.parse(localStorage.getItem(DEVICE_SESSION_KEY)||'null');
+let sessionHeartbeatTimer=null;
+function sessionIdentityFor(data,pin){
+    if(pin===(data.masterPIN||''))return {id:'OWNER',name:data.masterOwnerName,role:'Owner'};
+    const staff=(data.staff||[]).find(s=>s.pin&&s.pin===pin);if(!staff)return null;
+    return {id:staff.id,name:staff.name,role:(staff.role==='Engineer'||staff.role==='Supervisor')?'Supervisor':(staff.role==='Technical Officer'?'Officer':'Technician')};
+}
+function deviceLabel(){return `${/android/i.test(navigator.userAgent)?'Android':(/iphone|ipad/i.test(navigator.userAgent)?'iOS':'Desktop')} • ${navigator.platform||'Browser'}`;}
+async function upsertRemoteSnapshot(data){
+    const stamp=new Date().toISOString();const response=await fetch(`${SUPABASE_URL}/rest/v1/plantmaster_sync?on_conflict=site_id`,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({site_id:SUPABASE_SITE_ID,data,updated_at:stamp})});
+    if(!response.ok)throw new Error(await response.text());lastCloudTimestamp=stamp;
+}
+function pruneDeviceSessions(data){data.activeDeviceSessions=data.activeDeviceSessions||{};const now=Date.now();Object.keys(data.activeDeviceSessions).forEach(key=>{if(new Date(data.activeDeviceSessions[key].expiresAt).getTime()<=now)delete data.activeDeviceSessions[key];});return data.activeDeviceSessions;}
+async function acquireExclusivePinSession(identity,remoteData){
+    const sessions=pruneDeviceSessions(remoteData);const existing=sessions[identity.id];
+    if(existing&&existing.deviceId!==deviceId)throw new Error(`PIN_IN_USE|${existing.deviceLabel||'another device'}|${existing.lastSeen||''}`);
+    const token=(activeDeviceSession?.identityId===identity.id&&activeDeviceSession?.deviceId===deviceId)?activeDeviceSession.token:(crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`);
+    const now=new Date();sessions[identity.id]={identityId:identity.id,userName:identity.name,deviceId,deviceLabel:deviceLabel(),token,lastSeen:now.toISOString(),expiresAt:new Date(now.getTime()+SESSION_TTL_MS).toISOString()};
+    await upsertRemoteSnapshot(remoteData);
+    activeDeviceSession={identityId:identity.id,userName:identity.name,deviceId,token};localStorage.setItem(DEVICE_SESSION_KEY,JSON.stringify(activeDeviceSession));
+    return remoteData;
+}
+attemptApplicationLogin=async function(){
+    const input=document.getElementById('login-gate-pin'),error=document.getElementById('login-gate-error');const pin=input.value.trim();error.textContent='';
+    if(!pin){error.textContent='Enter your assigned PIN.';input.focus();return;}
+    let remoteData=null;
+    try{const row=await fetchCloudRow();remoteData=row?.data||JSON.parse(JSON.stringify(appData));}
+    catch(networkError){
+        const localIdentity=sessionIdentityFor(appData,pin);const validOffline=localIdentity&&activeDeviceSession?.identityId===localIdentity.id&&activeDeviceSession?.deviceId===deviceId;
+        if(!validOffline){input.value='';error.textContent='Internet is required for a new login so the PIN device lock can be verified.';return;}
+        remoteData=appData;
+    }
+    const identity=sessionIdentityFor(remoteData,pin);if(!identity){input.value='';error.textContent='Invalid PIN. Access denied.';input.focus();return;}
+    try{if(navigator.onLine)remoteData=await acquireExclusivePinSession(identity,remoteData);}
+    catch(sessionError){
+        input.value='';
+        if(String(sessionError.message).startsWith('PIN_IN_USE|')){const parts=sessionError.message.split('|');error.textContent=`This PIN is already active on ${parts[1]}. Log out there before using this device.`;}
+        else error.textContent='Could not reserve this PIN session. Please check the connection and try again.';
+        return;
+    }
+    appData=remoteData;currentUserName=identity.name;currentUserRole=identity.role;currentUserPIN=pin;localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
+    completeApplicationUnlock();startSessionHeartbeat();
+};
+async function renewActiveDeviceSession(){
+    if(!activeDeviceSession||!navigator.onLine)return;
+    try{
+        const row=await fetchCloudRow();if(!row?.data)return;const remote=row.data,sessions=pruneDeviceSessions(remote),current=sessions[activeDeviceSession.identityId];
+        if(current&&current.token!==activeDeviceSession.token){alert('This PIN session was opened on another device. This device will now log out.');return logoutApplication(false);}
+        const now=new Date();sessions[activeDeviceSession.identityId]={...(current||{}),identityId:activeDeviceSession.identityId,userName:activeDeviceSession.userName,deviceId,deviceLabel:deviceLabel(),token:activeDeviceSession.token,lastSeen:now.toISOString(),expiresAt:new Date(now.getTime()+SESSION_TTL_MS).toISOString()};
+        await upsertRemoteSnapshot(remote);appData.activeDeviceSessions=sessions;
+    }catch(error){console.warn('Session heartbeat buffered until connection returns',error);}
+}
+function startSessionHeartbeat(){clearInterval(sessionHeartbeatTimer);renewActiveDeviceSession();sessionHeartbeatTimer=setInterval(renewActiveDeviceSession,60000);}
+async function logoutApplication(releaseRemote=true){
+    const session=activeDeviceSession;clearInterval(sessionHeartbeatTimer);sessionHeartbeatTimer=null;
+    if(releaseRemote&&session&&navigator.onLine){
+        try{const row=await fetchCloudRow();if(row?.data){const sessions=pruneDeviceSessions(row.data);if(sessions[session.identityId]?.token===session.token){delete sessions[session.identityId];await upsertRemoteSnapshot(row.data);}}}catch(error){console.warn('Remote logout will expire automatically',error);}
+    }
+    activeDeviceSession=null;localStorage.removeItem(DEVICE_SESSION_KEY);closeCloudRealtime();lockApplication();
+    const status=document.getElementById('login-gate-error');if(status)status.textContent=navigator.onLine?'Logged out. This PIN is now available for another device.':'Logged out locally. The remote PIN lock will expire automatically within four minutes.';
+}
+window.addEventListener('online',()=>{if(window.appUnlocked&&activeDeviceSession){renewActiveDeviceSession();forceAutomaticSync();}});
+
+
+
+/* =========================================================
+   PRINT-FITTED EXCEL, WORD & PDF REPORT LAYOUTS
+   ========================================================= */
+function orderedHeaders(rows){return [...new Set(cleanRows(rows).flatMap(row=>Object.keys(row)))];}
+function buildFittedWorksheet(inputRows){
+    const rows=cleanRows(inputRows),headers=orderedHeaders(rows);const worksheet=XLSX.utils.json_to_sheet(rows.length?rows:[{Message:'No records'}],{header:headers.length?headers:undefined});
+    worksheet['!cols']=(headers.length?headers:['Message']).map(header=>{let width=String(header).length+2;rows.forEach(row=>{width=Math.max(width,Math.min(50,String(row[header]??'').length+2));});return {wch:Math.max(10,Math.min(width,50))};});
+    if(worksheet['!ref'])worksheet['!autofilter']={ref:worksheet['!ref']};
+    worksheet['!freeze']={xSplit:0,ySplit:1,topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
+    return worksheet;
+}
+exportRowsExcel=function(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    if(window.XLSX){const workbook=XLSX.utils.book_new();workbook.Props={Title:name,Subject:'PlantMaster Pro structured export',Author:'PlantMaster Pro',CreatedDate:new Date()};XLSX.utils.book_append_sheet(workbook,buildFittedWorksheet(rows),name.slice(0,31));XLSX.writeFile(workbook,`${safeFileName(name)}_${localISODate()}.xlsx`,{compression:true});}
+    else downloadBlob(spreadsheetXML({[name]:rows}),`${safeFileName(name)}_${localISODate()}.xls`,'application/vnd.ms-excel');
+};
+downloadAllMergedExcel=function(){
+    const sheets=typeof allMergedSheets==='function'?allMergedSheets():{};
+    if(window.XLSX){const workbook=XLSX.utils.book_new();workbook.Props={Title:'PlantMaster Pro — Complete Merged Data',Author:'PlantMaster Pro',CreatedDate:new Date()};Object.entries(sheets).forEach(([name,rows])=>XLSX.utils.book_append_sheet(workbook,buildFittedWorksheet(rows),name.slice(0,31)));XLSX.writeFile(workbook,`PlantMaster_All_Merged_Data_${localISODate()}.xlsx`,{compression:true});}
+    else downloadBlob(spreadsheetXML(sheets),`PlantMaster_All_Merged_Data_${localISODate()}.xls`,'application/vnd.ms-excel');
+};
+exportRowsWord=async function(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    const ready=await ensureExportLibrary(()=>!!window.docx,'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');if(!ready){alert('Word export library could not load. Check internet access and try again.');return;}
+    const D=window.docx,headers=orderedHeaders(rows),children=[new D.Paragraph({text:name,heading:D.HeadingLevel.TITLE}),new D.Paragraph({children:[new D.TextRun({text:`Exported: ${localTimestamp()} • Records: ${rows.length}`,italics:true,size:18})]})];
+    rows.forEach((row,index)=>{
+        children.push(new D.Paragraph({children:[new D.TextRun({text:`Record ${index+1}`,bold:true,size:20})],keepNext:true,spacing:{before:140,after:50}}));
+        children.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:headers.map(header=>new D.TableRow({cantSplit:true,children:[new D.TableCell({width:{size:28,type:D.WidthType.PERCENTAGE},shading:{fill:'DCE6F1'},children:[new D.Paragraph({children:[new D.TextRun({text:String(header),bold:true,size:16})]})]}),new D.TableCell({width:{size:72,type:D.WidthType.PERCENTAGE},children:[new D.Paragraph({children:[new D.TextRun({text:String(row[header]??''),size:16})]})]})]}))}));
+    });
+    const documentFile=new D.Document({sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE},margin:{top:500,right:500,bottom:500,left:500}}},children}]});
+    const blob=await D.Packer.toBlob(documentFile);downloadBlob(blob,`${safeFileName(name)}_${localISODate()}.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+};
+exportRowsPDF=async function(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    const jsReady=await ensureExportLibrary(()=>!!window.jspdf?.jsPDF,'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');if(!jsReady){alert('PDF export library could not load. Check internet access and try again.');return;}
+    if(!window.jspdf.jsPDF.API.autoTable)await ensureExportLibrary(()=>!!window.jspdf.jsPDF.API.autoTable,'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+    const headers=orderedHeaders(rows),wide=headers.length>6;const doc=new window.jspdf.jsPDF({orientation:wide?'portrait':'landscape',unit:'pt',format:'a4'});doc.setProperties({title:name,subject:'PlantMaster Pro structured report',author:'PlantMaster Pro'});
+    doc.setFontSize(14);doc.text(name,28,28);doc.setFontSize(8);doc.text(`Exported: ${localTimestamp()} • Records: ${rows.length}`,28,42);
+    if(wide){
+        const body=[];rows.forEach((row,index)=>{body.push([`Record ${index+1}`,'']);headers.forEach(header=>body.push([header,String(row[header]??'')]));});
+        doc.autoTable({startY:50,head:[['Field','Value']],body,theme:'grid',styles:{fontSize:7,cellPadding:2.5,overflow:'linebreak',valign:'top'},headStyles:{fillColor:[37,99,235],fontSize:8},columnStyles:{0:{cellWidth:125,fontStyle:'bold'},1:{cellWidth:'auto'}},didParseCell:data=>{if(data.section==='body'&&String(data.row.raw?.[0]||'').startsWith('Record ')){data.cell.styles.fillColor=[226,232,240];data.cell.styles.fontStyle='bold';}},showHead:'everyPage',margin:{top:28,left:28,right:28,bottom:30}});
+    }else{
+        doc.autoTable({startY:50,head:[headers],body:rows.map(row=>headers.map(header=>String(row[header]??''))),theme:'grid',styles:{fontSize:7,cellPadding:2,overflow:'linebreak',valign:'top'},headStyles:{fillColor:[37,99,235],fontSize:7},showHead:'everyPage',margin:{top:28,left:20,right:20,bottom:30}});
+    }
+    const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setFontSize(7);doc.setTextColor(90);doc.text(`PlantMaster Pro • ${name} • Page ${page} of ${pages}`,28,doc.internal.pageSize.height-12);}
+    doc.save(`${safeFileName(name)}_${localISODate()}.pdf`);
+};
+
+const renderAllBeforeRemoveAndReportLayout=renderAll;
+renderAll=function(){renderAllBeforeRemoveAndReportLayout();decorateRemoveControls();};
+renderAll();
+
+
+
+/* Description entries are appendable by all roles and removable by Owner only. */
+function removeAssetDescriptionEntry(assetId,entryId){if(!ownerDeleteAllowed())return;const asset=appData.assets.find(a=>a.id===assetId);if(!asset)return;const i=(asset.descriptionEntries||[]).findIndex(e=>e.id===entryId);if(i<0)return;const entry=asset.descriptionEntries[i];if(!confirm(`Remove this ${asset.name} description entry?`))return;asset.descriptionEntries.splice(i,1);asset.description=asset.descriptionEntries[0]?.text||'';setSaveContext('Asset description removed',`${asset.name} → Details → Activity → Sync`,entry.text);saveState();}
+renderDescriptionTimeline=function(asset){const entries=(asset.descriptionEntries||[]).slice(0,20);return `<div class="description-timeline">${entries.length?entries.map(e=>`<div class="description-entry"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong>${escapeHTML(e.timestamp)} · ${escapeHTML(e.user)}</strong>${currentUserRole==='Owner'?`<button class="btn btn-danger btn-sm" onclick="removeAssetDescriptionEntry('${asset.id}','${e.id}');event.stopPropagation();">Remove</button>`:''}</div><div style="margin-top:3px;">${escapeHTML(e.text)}</div></div>`).join(''):'<div style="font-size:11px;color:var(--text-muted);">No description updates yet.</div>'}</div>`;};
+renderAll();
 
 </script>
 <div id="save-destination-toast" class="save-destination-toast" role="status" aria-live="polite"></div>
