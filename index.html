@@ -434,7 +434,7 @@
             <div class="nav-category">Main Hub & Assets</div>
             <a class="nav-item active" onclick="switchTab('dashboard'); toggleSidebarOnMobile();">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                <span>Plant Assets Hub (Home)</span>
+                <span>Home Dashboard</span>
             </a>
             <a class="nav-item" onclick="switchTab('asset-detail'); toggleSidebarOnMobile();">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>
@@ -524,8 +524,8 @@
                     <span>Menu</span>
                 </button>
                 <div class="header-title">
-                    <h2 id="page-title">Plant Assets Hub (Home Screen)</h2>
-                    <p id="page-subtitle">Line-by-Line Equipment Directory — Click any asset to open 360° Technical Details</p>
+                    <h2 id="page-title">PlantMaster Home Dashboard</h2>
+                    <p id="page-subtitle">Quick access to assets, alarms, checklists, attendance, work orders, reports and synchronization</p>
                 </div>
             </div>
             <div class="header-actions">
@@ -535,7 +535,7 @@
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="color:var(--accent-warning);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     <span id="current-user-badge">👑 Logged in: Haseeb Awan (Master Owner)</span>
                 </div>
-                <div class="header-stat" style="cursor:pointer;" onclick="switchTab('email-dispatch')" title="11:00 AM PKT Daily Email Dispatch">
+                <div class="header-stat" style="cursor:pointer;" onclick="switchTab('alarms')" title="Open live Plant Alarm Center">
                     <span class="badge-pulse danger" id="overdue-pulse"></span>
                     <span id="overdue-header-count" style="color:#ff6b6b; font-weight:800;">3 Red Marks</span>
                 </div>
@@ -568,6 +568,8 @@
                     <div class="section-title"><h3>Quick Access</h3><p>Open any plant workflow directly from the home screen.</p></div><div style="display:flex;gap:6px;"><select id="dashboard-all-format" class="form-control" style="width:105px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-success btn-sm" onclick="downloadAllMerged(document.getElementById('dashboard-all-format').value)">⬇ Download All</button></div>
                 </div>
                 <div class="home-nav-grid">
+                    <button class="home-nav-btn" onclick="switchTab('assets')">🏭 Plant Assets<small>Open all machines, pumps, chillers and utilities</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('alarms')">🚨 Alarm Center<small><span id="home-alarm-button-count">0 active alarms</span></small></button>
                     <button class="home-nav-btn" onclick="switchTab('checklists-daily')">✅ Daily Checklists<small>Shift A, B and C inspections</small></button>
                     <button class="home-nav-btn" onclick="switchTab('checklists-weekly')">🧹 Weekly Maintenance<small>Filters and strainers</small></button>
                     <button class="home-nav-btn" onclick="switchTab('pm-120k')">⚙️ 120k Overhauls<small>Husky preventive maintenance</small></button>
@@ -580,6 +582,14 @@
                     <button class="home-nav-btn" onclick="switchTab('reports')">📊 Reports & Backup<small>Export, print and restore</small></button>
                 </div>
 
+            </div>
+
+            <!-- DEDICATED ASSET DIRECTORY -->
+            <div id="tab-assets" class="tab-content">
+                <div class="section-header">
+                    <div class="section-title"><h3>Plant Assets Directory</h3><p>All machines, compressors, cooling-tower equipment, chillers and pumps.</p></div>
+                    <button class="btn btn-outline btn-sm" onclick="switchTab('dashboard')">← Back to Home</button>
+                </div>
                 <!-- Line 1: Husky Molding Machines (5) -->
                 <div class="asset-hub-category">
                     <div class="asset-hub-title">
@@ -615,6 +625,16 @@
                     </div>
                     <div class="asset-list-line" id="home-chiller-list"></div>
                 </div>
+
+            </div>
+
+            <!-- DEDICATED ALARM CENTER -->
+            <div id="tab-alarms" class="tab-content">
+                <div class="section-header">
+                    <div class="section-title"><h3>Plant Alarm Center</h3><p>Live maintenance, checklist, inventory, work-order and shutdown alarms.</p></div>
+                    <div style="display:flex;gap:8px;"><span id="alarm-center-count" class="status-badge critical">0 Active</span><button class="btn btn-outline btn-sm" onclick="switchTab('dashboard')">← Home</button></div>
+                </div>
+                <div id="alarm-center-list" class="grid-2"></div>
             </div>
 
             <!-- TAB 2: 360° ASSET DETAIL VIEW -->
@@ -1580,6 +1600,8 @@ The application will report “Setup Required” if this table has not yet been 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
@@ -1842,7 +1864,9 @@ function switchTab(tabId) {
 
     const titleEl = document.getElementById("page-title");
     const subEl = document.getElementById("page-subtitle");
-    if (tabId === "dashboard") { titleEl.textContent = "Plant Assets Hub (Home Screen)"; subEl.textContent = "Line-by-Line Equipment Directory — Click any asset to open 360° Technical Details"; }
+    if (tabId === "dashboard") { titleEl.textContent = "PlantMaster Home Dashboard"; subEl.textContent = "Quick access to assets, alarms, checklists, attendance, work orders, reports and synchronization"; }
+    if (tabId === "assets") { titleEl.textContent = "Plant Assets Directory"; subEl.textContent = "Machines, compressors, cooling tower, chillers and all pumps"; }
+    if (tabId === "alarms") { titleEl.textContent = "Plant Alarm Center"; subEl.textContent = "Live alarms from maintenance, checklists, shutdowns, work orders and inventory"; renderAlarmCenter(); }
     if (tabId === "asset-detail") { titleEl.textContent = "360° Asset Detail & Shift Log View"; subEl.textContent = "Complete technical parameters, multi-year history, and direct shift action center"; }
     if (tabId === "checklists-daily") { titleEl.textContent = "Daily Shift Checklists (A, B, C Shifts)"; subEl.textContent = "Select Shift A, B, or C, fill parameter verification readings (`Your name is auto-locked`)"; }
     if (tabId === "checklists-weekly") { titleEl.textContent = "Weekly Filters & Strainers Schedule"; subEl.textContent = "Mandatory weekly cleaning protocol (`Items marked RED are overdue > 7 days`)"; }
@@ -3913,6 +3937,114 @@ renderAll();
 /* Description entries are appendable by all roles and removable by Owner only. */
 function removeAssetDescriptionEntry(assetId,entryId){if(!ownerDeleteAllowed())return;const asset=appData.assets.find(a=>a.id===assetId);if(!asset)return;const i=(asset.descriptionEntries||[]).findIndex(e=>e.id===entryId);if(i<0)return;const entry=asset.descriptionEntries[i];if(!confirm(`Remove this ${asset.name} description entry?`))return;asset.descriptionEntries.splice(i,1);asset.description=asset.descriptionEntries[0]?.text||'';setSaveContext('Asset description removed',`${asset.name} → Details → Activity → Sync`,entry.text);saveState();}
 renderDescriptionTimeline=function(asset){const entries=(asset.descriptionEntries||[]).slice(0,20);return `<div class="description-timeline">${entries.length?entries.map(e=>`<div class="description-entry"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><strong>${escapeHTML(e.timestamp)} · ${escapeHTML(e.user)}</strong>${currentUserRole==='Owner'?`<button class="btn btn-danger btn-sm" onclick="removeAssetDescriptionEntry('${asset.id}','${e.id}');event.stopPropagation();">Remove</button>`:''}</div><div style="margin-top:3px;">${escapeHTML(e.text)}</div></div>`).join(''):'<div style="font-size:11px;color:var(--text-muted);">No description updates yet.</div>'}</div>`;};
+renderAll();
+
+
+
+/* =========================================================
+   LIVE FILTER STATUS PERSISTENCE & COMPLETE ALARM CENTER
+   ========================================================= */
+appData.maintenance=appData.maintenance||{};
+appData.maintenance.weeklyFilterStatuses=appData.maintenance.weeklyFilterStatuses||{};
+function weeklyStatusIsAlarm(value){return ['Not OK','Loose','Abnormal'].includes(value);}
+function persistWeeklyFilterStatus(select){
+    const id=select.id;if(!id)return;appData.maintenance.weeklyFilterStatuses[id]=select.value;
+    const due=new Set(appData.maintenance.weeklyDue||[]);weeklyStatusIsAlarm(select.value)?due.add(id):due.delete(id);appData.maintenance.weeklyDue=[...due];
+    const row=select.closest('tr');if(row&&!weeklyStatusIsAlarm(select.value)){const dateCell=row.cells[4];if(dateCell)dateCell.innerHTML=`${localISODate()} (<strong style="color:var(--accent-success);">Checked today</strong>)`;}
+    styleStatusSelector(select);updateChecklistRow(select);
+    setSaveContext('Filter cleaning status updated','Weekly Filter Schedule → Alarm Center → Home Alarm Button → History → Sync',`${id}: ${select.value}`);saveState();renderAlarmCenter();
+}
+function bindWeeklyStatusPersistence(){
+    document.querySelectorAll('#weekly-table-body tr').forEach((row,index)=>{
+        const select=row.querySelector('.status-selector');if(!select)return;if(!select.id)select.id=`wf-${index+1}`;
+        const saved=appData.maintenance.weeklyFilterStatuses[select.id];if(saved)select.value=saved;else appData.maintenance.weeklyFilterStatuses[select.id]=select.value;
+        const due=new Set(appData.maintenance.weeklyDue||[]);weeklyStatusIsAlarm(select.value)?due.add(select.id):due.delete(select.id);appData.maintenance.weeklyDue=[...due];styleStatusSelector(select);updateChecklistRow(select);
+        if(select.dataset.weeklyPersistenceBound)return;select.dataset.weeklyPersistenceBound='true';select.addEventListener('change',()=>persistWeeklyFilterStatus(select));
+    });
+    localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
+}
+function collectActiveAlarms(){
+    const alarms=[];const dismissed=appData.maintenance?.dismissedAssetAlerts||[];
+    appData.assets.filter(a=>a.category==='husky'&&a.cycles>=118800&&!dismissed.includes(a.id)).forEach(a=>alarms.push({level:'critical',icon:'⚙️',title:`${a.name} overhaul due`,detail:`${Number(a.cycles||0).toLocaleString()} cycles recorded. 120,000-cycle maintenance is approaching.`,target:'pm-120k'}));
+    (appData.maintenance?.weeklyDue||[]).forEach(id=>{const row=[...document.querySelectorAll('#weekly-table-body tr')][Math.max(0,Number(id.split('-')[1])-1)];alarms.push({level:'critical',icon:'🧹',title:`Filter cleaning action required — ${id.toUpperCase()}`,detail:row?.cells[0]?.innerText.trim()||'Weekly filter/strainer status is not acceptable.',target:'checklists-weekly'});});
+    appData.workOrders.filter(w=>w.status!=='Completed'&&['Critical','High'].includes(w.priority)).forEach(w=>alarms.push({level:w.priority==='Critical'?'critical':'warning',icon:'🧰',title:`${w.priority} work order ${w.id}`,detail:`${w.asset}: ${w.desc}`,target:'work-orders'}));
+    appData.spares.filter(x=>x.stock<=x.min||/Critical|Low/i.test(x.status||'')).forEach(x=>alarms.push({level:x.stock<x.min?'critical':'warning',icon:'📦',title:`Spare stock alert — ${x.part}`,detail:`${x.desc}: ${x.stock} in stock, minimum ${x.min}.`,target:'spares'}));
+    if(syncConnectionState==='error'||syncConnectionState==='setup')alarms.push({level:'warning',icon:'☁️',title:'Cross-device synchronization needs attention',detail:syncConnectionState==='setup'?'Supabase table setup is required.':'The app is working offline and changes remain buffered.',target:'sync'});
+    return alarms;
+}
+function renderAlarmCenter(){
+    const alarms=collectActiveAlarms(),list=document.getElementById('alarm-center-list'),badge=document.getElementById('alarm-center-count'),home=document.getElementById('home-alarm-button-count');
+    if(badge){badge.textContent=`${alarms.length} Active`;badge.className=`status-badge ${alarms.length?'critical':'operational'}`;}if(home)home.textContent=`${alarms.length} active alarm${alarms.length===1?'':'s'}`;
+    if(list)list.innerHTML=alarms.length?alarms.map((a,i)=>`<div class="card" style="border-left:4px solid var(--accent-${a.level==='critical'?'danger':'warning'});"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><h4>${a.icon} ${escapeHTML(a.title)}</h4><p style="font-size:12px;color:var(--text-secondary);margin-top:6px;">${escapeHTML(a.detail)}</p></div><span class="status-badge ${a.level}">${a.level.toUpperCase()}</span></div><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="switchTab('${a.target}')">Open Source</button></div>`).join(''):'<div class="card" style="grid-column:1/-1;text-align:center;border-color:var(--accent-success);"><div style="font-size:35px;">✅</div><h4 style="color:var(--accent-success);">No active alarms</h4><p style="font-size:12px;color:var(--text-secondary);">All monitored maintenance, filters, work orders and inventory thresholds are clear.</p></div>';
+    const header=document.getElementById('overdue-header-count'),pulse=document.getElementById('overdue-pulse'),menu=document.getElementById('menu-alarm-count');
+    if(header){header.textContent=`${alarms.length} Alarm${alarms.length===1?'':'s'}`;header.style.color=alarms.length?'#ff6b6b':'var(--accent-success)';}if(pulse)pulse.classList.toggle('danger',alarms.length>0);if(menu)menu.textContent=alarms.length;
+}
+const checkOverdueBeforeFullAlarms=checkOverdueRedMarks;
+checkOverdueRedMarks=function(){checkOverdueBeforeFullAlarms();renderAlarmCenter();};
+
+
+
+/* =========================================================
+   APP-STYLE VISUAL DOWNLOAD ENGINE (EXCEL / WORD / PDF)
+   ========================================================= */
+function visualReportChunks(name,inputRows){
+    const rows=cleanRows(inputRows),headers=orderedHeaders(rows),chunks=[];const chunkSize=headers.length>8?8:(headers.length>5?12:18);
+    if(!rows.length)return [];
+    for(let offset=0;offset<rows.length;offset+=chunkSize){
+        const group=rows.slice(offset,offset+chunkSize),wrap=document.createElement('div');wrap.style.cssText=`position:fixed;left:-20000px;top:0;width:${Math.max(1050,headers.length*125)}px;background:#000;color:#f8fafc;padding:22px;font-family:Arial,sans-serif;z-index:-1;`;
+        wrap.innerHTML=`<div style="background:#0c0c0c;border:1px solid #222;border-radius:12px;padding:18px;"><div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #222;padding-bottom:12px;margin-bottom:12px;"><div><div style="font-size:22px;font-weight:800;color:#60a5fa;">PlantMaster Pro</div><div style="font-size:16px;font-weight:700;margin-top:4px;">${escapeHTML(name)}</div></div><div style="font-size:11px;color:#94a3b8;text-align:right;">Exported: ${escapeHTML(localTimestamp())}<br>Records ${offset+1}–${offset+group.length} of ${rows.length}</div></div><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;"><thead><tr>${headers.map(h=>`<th style="background:#050505;color:#94a3b8;border:1px solid #283244;padding:8px;text-align:left;vertical-align:top;overflow-wrap:anywhere;">${escapeHTML(h)}</th>`).join('')}</tr></thead><tbody>${group.map((row,i)=>`<tr>${headers.map(h=>`<td style="background:${i%2?'#0a0a0a':'#111827'};color:#f8fafc;border:1px solid #283244;padding:8px;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;">${escapeHTML(String(row[h]??''))}</td>`).join('')}</tr>`).join('')}</tbody></table><div style="margin-top:10px;font-size:10px;color:#64748b;text-align:right;">PlantMaster Pro • Secure synchronized plant record</div></div>`;
+        document.body.appendChild(wrap);chunks.push(wrap);
+    }
+    return chunks;
+}
+async function captureVisualReport(name,rows){
+    const ready=await ensureExportLibrary(()=>!!window.html2canvas,'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');if(!ready)throw new Error('Visual rendering library could not load.');
+    const nodes=visualReportChunks(name,rows),canvases=[];
+    try{for(const node of nodes){canvases.push(await html2canvas(node,{backgroundColor:'#000000',scale:1.35,useCORS:true,logging:false,width:node.scrollWidth,height:node.scrollHeight,windowWidth:node.scrollWidth,windowHeight:node.scrollHeight}));}}finally{nodes.forEach(n=>n.remove());}
+    return canvases;
+}
+function canvasBytes(canvas){const base64=canvas.toDataURL('image/png').split(',')[1],binary=atob(base64),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes;}
+function styleExcelDataSheet(sheet,rows){
+    const headers=orderedHeaders(rows);sheet.views=[{state:'frozen',ySplit:1}];sheet.autoFilter={from:{row:1,column:1},to:{row:Math.max(1,rows.length+1),column:Math.max(1,headers.length)}};
+    sheet.getRow(1).height=28;sheet.getRow(1).eachCell(cell=>{cell.font={bold:true,color:{argb:'FFF8FAFC'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2563EB'}};cell.alignment={vertical:'middle',horizontal:'left',wrapText:true};cell.border={bottom:{style:'thin',color:{argb:'FF60A5FA'}}};});
+    sheet.columns.forEach((column,index)=>{const key=headers[index];let width=Math.max(12,String(key||'').length+2);rows.forEach(row=>width=Math.max(width,Math.min(48,String(row[key]??'').length*.7+2)));column.width=Math.min(48,width);});
+    for(let r=2;r<=rows.length+1;r++){const row=sheet.getRow(r);row.alignment={vertical:'top',wrapText:true};row.eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:r%2?'FFF8FAFC':'FFEFF6FF'}};cell.border={bottom:{style:'hair',color:{argb:'FFCBD5E1'}},right:{style:'hair',color:{argb:'FFE2E8F0'}}};});}
+}
+exportRowsExcel=async function(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    const ready=await ensureExportLibrary(()=>!!window.ExcelJS,'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');if(!ready){return exportRowsCSV(name,rows);}
+    showSaveDestination('Preparing app-style Excel workbook…');const canvases=await captureVisualReport(name,rows);const workbook=new ExcelJS.Workbook();workbook.creator='PlantMaster Pro';workbook.created=new Date();
+    const visual=workbook.addWorksheet('Visual Report',{views:[{showGridLines:false}]});visual.getColumn(1).width=2;visual.getColumn(2).width=120;let visualRow=1;
+    canvases.forEach(canvas=>{const imageId=workbook.addImage({base64:canvas.toDataURL('image/png'),extension:'png'});const targetWidth=900,targetHeight=Math.round(canvas.height*(targetWidth/canvas.width));visual.addImage(imageId,{tl:{col:1,row:visualRow},ext:{width:targetWidth,height:targetHeight}});visualRow+=Math.ceil(targetHeight/20)+2;});
+    const dataSheet=workbook.addWorksheet('Structured Data');const headers=orderedHeaders(rows);dataSheet.addRow(headers);rows.forEach(row=>dataSheet.addRow(headers.map(h=>row[h]??'')));styleExcelDataSheet(dataSheet,rows);
+    const buffer=await workbook.xlsx.writeBuffer();downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`${safeFileName(name)}_${localISODate()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+};
+exportRowsWord=async function(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    const ready=await ensureExportLibrary(()=>!!window.docx,'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');if(!ready){alert('Word export library could not load.');return;}
+    showSaveDestination('Preparing app-style Word document…');const canvases=await captureVisualReport(name,rows),D=window.docx,children=[];
+    canvases.forEach((canvas,index)=>{const maxW=700,maxH=470,scale=Math.min(maxW/canvas.width,maxH/canvas.height);children.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.ImageRun({data:canvasBytes(canvas),transformation:{width:Math.round(canvas.width*scale),height:Math.round(canvas.height*scale)}})]}));if(index<canvases.length-1)children.push(new D.Paragraph({pageBreakBefore:true,text:''}));});
+    const documentFile=new D.Document({sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE},margin:{top:360,right:360,bottom:360,left:360}}},children}]});const blob=await D.Packer.toBlob(documentFile);downloadBlob(blob,`${safeFileName(name)}_${localISODate()}.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+};
+exportRowsPDF=async function(name,inputRows){
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
+    const ready=await ensureExportLibrary(()=>!!window.jspdf?.jsPDF,'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');if(!ready){alert('PDF export library could not load.');return;}
+    showSaveDestination('Preparing app-style PDF…');const canvases=await captureVisualReport(name,rows),doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'}),pageW=841.89,pageH=595.28,margin=18;
+    canvases.forEach((canvas,index)=>{if(index)doc.addPage('a4','landscape');const scale=Math.min((pageW-margin*2)/canvas.width,(pageH-margin*2)/canvas.height),w=canvas.width*scale,h=canvas.height*scale;doc.addImage(canvas.toDataURL('image/png'),'PNG',(pageW-w)/2,(pageH-h)/2,w,h,'','FAST');doc.setFontSize(7);doc.setTextColor(180);doc.text(`Page ${index+1} of ${canvases.length}`,pageW-70,pageH-7);});doc.save(`${safeFileName(name)}_${localISODate()}.pdf`);
+};
+
+
+
+async function downloadAllMergedExcel(){
+    const sheets=typeof allMergedSheets==='function'?allMergedSheets():{};const ready=await ensureExportLibrary(()=>!!window.ExcelJS,'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');if(!ready){alert('Excel rendering library could not load.');return;}
+    showSaveDestination('Preparing fitted multi-sheet Excel workbook…');const workbook=new ExcelJS.Workbook();workbook.creator='PlantMaster Pro';workbook.created=new Date();
+    Object.entries(sheets).forEach(([name,inputRows])=>{const rows=cleanRows(inputRows),headers=orderedHeaders(rows),sheet=workbook.addWorksheet(name.slice(0,31),{views:[{state:'frozen',ySplit:3}]});sheet.mergeCells(1,1,1,Math.max(1,headers.length));const title=sheet.getCell(1,1);title.value=`PlantMaster Pro — ${name}`;title.font={bold:true,size:16,color:{argb:'FFFFFFFF'}};title.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F172A'}};title.alignment={vertical:'middle'};sheet.getRow(1).height=30;sheet.mergeCells(2,1,2,Math.max(1,headers.length));sheet.getCell(2,1).value=`Exported ${localTimestamp()} • ${rows.length} record(s)`;sheet.getCell(2,1).font={italic:true,color:{argb:'FF475569'}};sheet.addRow(headers.length?headers:['Message']);if(rows.length)rows.forEach(row=>sheet.addRow(headers.map(h=>row[h]??'')));else sheet.addRow(['No records']);const headerRow=sheet.getRow(3);headerRow.eachCell(cell=>{cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2563EB'}};cell.alignment={wrapText:true,vertical:'middle'};});sheet.columns.forEach((col,i)=>{const h=headers[i]||'Message';let width=Math.max(12,h.length+2);rows.forEach(r=>width=Math.max(width,Math.min(48,String(r[h]??'').length*.7+2)));col.width=Math.min(48,width);});for(let r=4;r<=sheet.rowCount;r++){sheet.getRow(r).alignment={wrapText:true,vertical:'top'};sheet.getRow(r).eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:r%2?'FFF8FAFC':'FFEFF6FF'}};cell.border={bottom:{style:'hair',color:{argb:'FFCBD5E1'}}};});}if(headers.length)sheet.autoFilter={from:{row:3,column:1},to:{row:Math.max(3,sheet.rowCount),column:headers.length}};});
+    const buffer=await workbook.xlsx.writeBuffer();downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`PlantMaster_All_Merged_Data_${localISODate()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+}
+
+const renderAllBeforeAssetAlarmFilterFinal=renderAll;
+renderAll=function(){renderAllBeforeAssetAlarmFilterFinal();bindWeeklyStatusPersistence();decorateRemoveControls();renderAlarmCenter();};
+document.addEventListener('DOMContentLoaded',()=>{bindWeeklyStatusPersistence();renderAlarmCenter();});
 renderAll();
 
 </script>
