@@ -1154,6 +1154,7 @@
                         <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:13.5px; background:linear-gradient(135deg, #2563eb, #7c3aed);" onclick="dispatch11amReport()">
                             📧 Send 11:00 AM PKT Daily Maintenance Report Now
                         </button>
+                        <div id="manual-email-confirm-panel" style="display:none;margin-top:10px;padding:10px;border:1px solid var(--accent-warning);border-radius:8px;background:rgba(245,158,11,.08);font-size:12px;"><strong>Gmail compose was opened.</strong><br>After pressing Send in Gmail, return here and confirm delivery.<button class="btn btn-success btn-sm" style="margin-top:8px;width:100%;" onclick="confirmManualEmailSent()">✓ I Sent the Email — Clear 11:00 Alarm</button></div>
                     </div>
                 </div>
                 <div id="email-completion-details" class="completion-details">
@@ -3190,12 +3191,12 @@ renderSpares = function() {
     tbody.innerHTML=appData.spares.map((sp,i)=>{
         const status=sp.stock<=sp.min?(sp.stock<sp.min?'Critical Low':'Low Stock'):'OK'; sp.status=status;
         const badge=status==='OK'?'<span class="status-badge operational">Stock OK</span>':(status==='Low Stock'?'<span class="status-badge warning">Reorder Alert</span>':'<span class="status-badge critical">Immediate Order</span>');
-        return `<tr><td><strong>${escapeHTML(sp.part)}</strong></td><td>${escapeHTML(sp.desc)}</td><td>${escapeHTML(sp.asset)}</td><td><strong>${sp.stock} units</strong></td><td>${sp.min} units</td><td>${escapeHTML(sp.cost)}</td><td>${escapeHTML(sp.bin)}</td><td>${badge}</td><td><button class="btn btn-danger btn-sm" onclick="removeSpare(${i})">Removed</button></td></tr>`;
+        return `<tr><td><strong>${escapeHTML(sp.part)}</strong></td><td>${escapeHTML(sp.desc)}</td><td>${escapeHTML(sp.asset)}</td><td><strong>${sp.stock} units</strong></td><td>${sp.min} units</td><td>${escapeHTML(sp.cost)}</td><td>${escapeHTML(sp.bin)}</td><td>${badge}</td><td><button class="btn btn-danger btn-sm" onclick="removeSpare(${i})">Remove</button></td></tr>`;
     }).join('');
 };
 renderTools = function() {
     const tbody=document.getElementById('tools-table-body'); if(!tbody)return;
-    tbody.innerHTML=appData.tools.map((t,i)=>`<tr><td><strong>${escapeHTML(t.id)}</strong></td><td><strong>${escapeHTML(t.name)}</strong></td><td>${escapeHTML(t.cal)}</td><td><span class="status-badge ${t.status==='Available'?'operational':'warning'}">${escapeHTML(t.status)}</span></td><td>${escapeHTML(t.user)}</td><td>${escapeHTML(t.due)}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="toggleToolStatus(${i})">${t.status==='Available'?'Check Out':'Check In'}</button><button class="btn btn-danger btn-sm" onclick="removeTool(${i})">Removed</button></div></td></tr>`).join('');
+    tbody.innerHTML=appData.tools.map((t,i)=>`<tr><td><strong>${escapeHTML(t.id)}</strong></td><td><strong>${escapeHTML(t.name)}</strong></td><td>${escapeHTML(t.cal)}</td><td><span class="status-badge ${t.status==='Available'?'operational':'warning'}">${escapeHTML(t.status)}</span></td><td>${escapeHTML(t.user)}</td><td>${escapeHTML(t.due)}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="toggleToolStatus(${i})">${t.status==='Available'?'Check Out':'Check In'}</button><button class="btn btn-danger btn-sm" onclick="removeTool(${i})">Remove</button></div></td></tr>`).join('');
 };
 function renderInventoryLog() {
     const body=document.getElementById('inventory-log-body'); if(!body)return;
@@ -3648,9 +3649,9 @@ function downloadAllMergedExcel(){
 function renderModuleExportGrid(){const grid=document.getElementById('module-export-grid');if(!grid)return;grid.innerHTML=Object.keys(moduleDatasets()).map(name=>`<div class="module-export-card"><strong>${escapeHTML(name)}</strong><div style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm" onclick="exportModule('${name}','csv')">CSV</button><button class="btn btn-primary btn-sm" onclick="exportModule('${name}','excel')">Excel</button></div></div>`).join('');}
 
 // Adds CSV and Excel controls to every rendered data table without changing the existing layout.
-function renderedTableRows(table){const headers=[...table.querySelectorAll('thead th')].map(x=>x.innerText.trim());return [...table.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none').map(r=>{const cells=[...r.cells];const obj={};headers.forEach((h,i)=>obj[h||`Column ${i+1}`]=cells[i]?.innerText.trim()||'');return obj;});}
+function renderedTableRows(table){const headers=[...table.querySelectorAll('thead th')].map(x=>x.textContent.trim());return [...table.querySelectorAll('tbody tr')].filter(r=>r.style.display!=='none').map(r=>{const cells=[...r.cells];const obj={};headers.forEach((h,i)=>obj[h||`Column ${i+1}`]=cells[i]?.textContent.trim()||'');return obj;});}
 function exportRenderedTable(button,format){const table=button.closest('.table-container').querySelector('table');const title=button.dataset.exportName||'Table Data';const rows=renderedTableRows(table);format==='csv'?exportRowsCSV(title,rows):exportRowsExcel(title,rows);}
-function installTableExportButtons(){document.querySelectorAll('.table-container').forEach((container,i)=>{const table=container.querySelector(':scope > table');if(!table||container.querySelector(':scope > .table-export-bar'))return;const heading=container.closest('.card')?.querySelector('h4,h3')?.innerText.trim()||`Table ${i+1}`;const bar=document.createElement('div');bar.className='table-export-bar';bar.innerHTML=`<button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,'csv')">⬇ CSV</button><button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,'excel')">⬇ Excel</button>`;container.insertBefore(bar,table);});}
+function installTableExportButtons(){document.querySelectorAll('.table-container').forEach((container,i)=>{const table=container.querySelector(':scope > table');if(!table||container.querySelector(':scope > .table-export-bar'))return;const heading=container.closest('.card')?.querySelector('h4,h3')?.textContent.trim()||`Table ${i+1}`;const bar=document.createElement('div');bar.className='table-export-bar';bar.innerHTML=`<button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,'csv')">⬇ CSV</button><button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,'excel')">⬇ Excel</button>`;container.insertBefore(bar,table);});}
 
 const renderAllBeforeExportsAndShifts=renderAll;
 renderAll=function(){renderAllBeforeExportsAndShifts();renderModuleExportGrid();renderTeamAssignments();renderStaff('all');renderAttendanceSheet();loadPersistentDescriptionBoxes();installTableExportButtons();};
@@ -3672,31 +3673,31 @@ function collectCompleteDailyChecklist(){
     add('Submission Metadata','Daily Checklist','Description / Shift Remarks',document.getElementById('daily-desc-box')?.value||'','',document.getElementById('daily-desc-box')?.value||'');
     ['General','A','B','C','Rest'].forEach(key=>{const id=key==='General'?'shift-desc-general':(key==='Rest'?'shift-desc-rest':`shift-desc-${key.toLowerCase()}`);add('Shift Log Descriptions',`${key==='General'?'General Shift':(key==='Rest'?'Rest / Off':'Shift '+key)}`,'Full shift description',document.getElementById(id)?.value||'','',document.getElementById(id)?.value||'');});
     root.querySelectorAll('.param-row').forEach((row,index)=>{
-        const section=row.closest('.card')?.querySelector('h4')?.innerText.trim()||row.closest('div')?.querySelector('h5')?.innerText.trim()||'Daily Parameters';
-        const parameter=row.querySelector('.param-label')?.innerText.trim()||`Parameter ${index+1}`;
-        const value=controlValues(row)||row.innerText.replace(parameter,'').trim();
+        const section=row.closest('.card')?.querySelector('h4')?.textContent.trim()||row.closest('div')?.querySelector('h5')?.textContent.trim()||'Daily Parameters';
+        const parameter=row.querySelector('.param-label')?.textContent.trim()||`Parameter ${index+1}`;
+        const value=controlValues(row)||row.textContent.replace(parameter,'').trim();
         const status=[...row.querySelectorAll('.status-selector')].map(x=>x.value).join(' | ');
         add(section,parameter,parameter,value,status,'');
     });
     root.querySelectorAll('.checklist-section table').forEach(table=>{
-        const section=table.closest('.card')?.querySelector('h4')?.innerText.trim()||'Checklist Table';
-        const headers=[...table.querySelectorAll('thead th')].map(x=>x.innerText.trim());
+        const section=table.closest('.card')?.querySelector('h4')?.textContent.trim()||'Checklist Table';
+        const headers=[...table.querySelectorAll('thead th')].map(x=>x.textContent.trim());
         table.querySelectorAll('tbody tr').forEach((tr,rowIndex)=>{
-            const item=tr.cells[0]?.innerText.trim()||`Item ${rowIndex+1}`;
+            const item=tr.cells[0]?.textContent.trim()||`Item ${rowIndex+1}`;
             [...tr.cells].forEach((cell,colIndex)=>{
-                const controls=controlValues(cell);const text=cell.innerText.trim();const value=controls||text;
-                add(section,item,headers[colIndex]||`Field ${colIndex+1}`,value,cell.querySelector('.status-badge')?.innerText.trim()||cell.querySelector('.status-selector')?.value||'',text);
+                const controls=controlValues(cell);const text=cell.textContent.trim();const value=controls||text;
+                add(section,item,headers[colIndex]||`Field ${colIndex+1}`,value,cell.querySelector('.status-badge')?.textContent.trim()||cell.querySelector('.status-selector')?.value||'',text);
             });
         });
     });
     // Exhaustive field inventory guarantees that no current checklist control is omitted.
     root.querySelectorAll('input,select,textarea').forEach((el,index)=>{
-        const label=el.id?(root.querySelector(`label[for="${el.id}"]`)?.innerText.trim()||el.id):(el.closest('.param-row')?.querySelector('.param-label')?.innerText.trim()||el.getAttribute('placeholder')||`Checklist control ${index+1}`);
+        const label=el.id?(root.querySelector(`label[for="${el.id}"]`)?.textContent.trim()||el.id):(el.closest('.param-row')?.querySelector('.param-label')?.textContent.trim()||el.getAttribute('placeholder')||`Checklist control ${index+1}`);
         const value=el.type==='checkbox'?(el.checked?'Checked':'Not checked'):el.value;
-        const section=el.closest('.checklist-section')?.querySelector('h4')?.innerText.trim()||el.closest('.shift-submission-box,.card')?.querySelector('h4')?.innerText.trim()||'Daily Checklist Full Field Inventory';
+        const section=el.closest('.checklist-section')?.querySelector('h4')?.textContent.trim()||el.closest('.shift-submission-box,.card')?.querySelector('h4')?.textContent.trim()||'Daily Checklist Full Field Inventory';
         add(section,label,'Raw checklist field',value,el.classList.contains('status-selector')?el.value:'',el.getAttribute('placeholder')||'');
     });
-    root.querySelectorAll('.checklist-section h4,.checklist-section h5').forEach((heading,index)=>add('Checklist Task Register',`Task ${index+1}`,'Task / section heading',heading.innerText.trim(),'Included',''));
+    root.querySelectorAll('.checklist-section h4,.checklist-section h5').forEach((heading,index)=>add('Checklist Task Register',`Task ${index+1}`,'Task / section heading',heading.textContent.trim(),'Included',''));
     return rows;
 }
 
@@ -3740,7 +3741,7 @@ async function downloadAllMerged(format='excel'){
 installTableExportButtons=function(){
     document.querySelectorAll('.table-container').forEach((container,i)=>{
         const table=container.querySelector(':scope > table');if(!table)return;container.querySelector(':scope > .table-export-bar')?.remove();
-        const heading=container.closest('.card')?.querySelector('h4,h3')?.innerText.trim()||`Table ${i+1}`;const id=`table-format-${i}`;
+        const heading=container.closest('.card')?.querySelector('h4,h3')?.textContent.trim()||`Table ${i+1}`;const id=`table-format-${i}`;
         const bar=document.createElement('div');bar.className='table-export-bar';bar.innerHTML=`<select id="${id}" class="form-control" style="width:105px;"><option value="csv">CSV</option><option value="excel" selected>Excel</option><option value="word">Word</option><option value="pdf">PDF</option></select><button class="btn btn-outline btn-sm" data-export-name="${escapeHTML(heading)}" onclick="exportRenderedTable(this,document.getElementById('${id}').value)">⬇ Download</button>`;container.insertBefore(bar,table);
     });
 };
@@ -3804,10 +3805,10 @@ function removeAssetRecord(assetId){
 function removeCurrentEditedRecord(){if(currentEditType==='asset')return removeAssetRecord(currentEditIndex);if(currentEditType==='archive'){const item=appData.yearlyArchive[currentEditIndex];if(item)return removeArchiveRecord(item.id);}}
 function appendRemoveButton(cell,key,handler){if(!cell||cell.querySelector(`[data-remove-key="${key}"]`))return;const button=document.createElement('button');button.className='btn btn-danger btn-sm owner-delete-control';button.dataset.removeKey=key;button.textContent='🗑 Remove';button.disabled=currentUserRole!=='Owner';button.onclick=handler;cell.append(' ',button);}
 function decorateRemoveControls(){
-    document.querySelectorAll('#work-orders-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim();if(id)appendRemoveButton(row.cells[row.cells.length-1],`wo-${id}`,()=>removeWorkOrderRecord(id));});
-    document.querySelectorAll('#team-assignments-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim().split(/\s/)[0];if(id?.startsWith('TASK-'))appendRemoveButton(row.cells[row.cells.length-1],`task-${id}`,()=>removeTeamAssignmentRecord(id));});
-    document.querySelectorAll('#staff-table-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim();if(id)appendRemoveButton(row.cells[row.cells.length-1],`staff-${id}`,()=>removeStaffRecord(id));});
-    document.querySelectorAll('#worker-pins-body tr').forEach(row=>{const name=row.cells[0]?.innerText.trim(),staff=appData.staff.find(x=>x.name===name);if(staff&&staff.name!==appData.masterOwnerName)appendRemoveButton(row.cells[row.cells.length-1],`pin-staff-${staff.id}`,()=>removeStaffRecord(staff.id));});
+    document.querySelectorAll('#work-orders-body tr').forEach(row=>{const id=row.cells[0]?.textContent.trim();if(id)appendRemoveButton(row.cells[row.cells.length-1],`wo-${id}`,()=>removeWorkOrderRecord(id));});
+    document.querySelectorAll('#team-assignments-body tr').forEach(row=>{const id=row.cells[0]?.textContent.trim().split(/\s/)[0];if(id?.startsWith('TASK-'))appendRemoveButton(row.cells[row.cells.length-1],`task-${id}`,()=>removeTeamAssignmentRecord(id));});
+    document.querySelectorAll('#staff-table-body tr').forEach(row=>{const id=row.cells[0]?.textContent.trim();if(id)appendRemoveButton(row.cells[row.cells.length-1],`staff-${id}`,()=>removeStaffRecord(id));});
+    document.querySelectorAll('#worker-pins-body tr').forEach(row=>{const name=row.cells[0]?.textContent.trim(),staff=appData.staff.find(x=>x.name===name);if(staff&&staff.name!==appData.masterOwnerName)appendRemoveButton(row.cells[row.cells.length-1],`pin-staff-${staff.id}`,()=>removeStaffRecord(staff.id));});
     ['#yearly-archive-body','#detail-history-body'].forEach(selector=>document.querySelectorAll(`${selector} tr`).forEach(row=>{const edit=row.querySelector('button[onclick*="openUniversalEditModal"]');const match=edit?.getAttribute('onclick')?.match(/archive'\s*,\s*'([^']+)'/);if(match)appendRemoveButton(row.cells[row.cells.length-1],`archive-${match[1]}`,()=>removeArchiveRecord(match[1]));}));
     const modalSave=document.querySelector('#modal-edit-universal .btn-primary');if(modalSave&&!document.getElementById('universal-delete-button')){const b=document.createElement('button');b.id='universal-delete-button';b.className='btn btn-danger owner-delete-control';b.textContent='🗑 Remove Record';b.onclick=removeCurrentEditedRecord;modalSave.parentElement.insertBefore(b,modalSave);}
     document.querySelectorAll('.owner-delete-control').forEach(b=>b.disabled=currentUserRole!=='Owner');
@@ -3974,7 +3975,7 @@ function bindWeeklyStatusPersistence(){
 function collectActiveAlarms(){
     const alarms=[];const dismissed=appData.maintenance?.dismissedAssetAlerts||[];
     appData.assets.filter(a=>a.category==='husky'&&a.cycles>=118800&&!dismissed.includes(a.id)).forEach(a=>alarms.push({level:'critical',icon:'⚙️',title:`${a.name} overhaul due`,detail:`${Number(a.cycles||0).toLocaleString()} cycles recorded. 120,000-cycle maintenance is approaching.`,target:'pm-120k'}));
-    (appData.maintenance?.weeklyDue||[]).forEach(id=>{const row=[...document.querySelectorAll('#weekly-table-body tr')][Math.max(0,Number(id.split('-')[1])-1)];alarms.push({level:'critical',icon:'🧹',title:`Filter cleaning action required — ${id.toUpperCase()}`,detail:row?.cells[0]?.innerText.trim()||'Weekly filter/strainer status is not acceptable.',target:'checklists-weekly'});});
+    (appData.maintenance?.weeklyDue||[]).forEach(id=>{const row=[...document.querySelectorAll('#weekly-table-body tr')][Math.max(0,Number(id.split('-')[1])-1)];alarms.push({level:'critical',icon:'🧹',title:`Filter cleaning action required — ${id.toUpperCase()}`,detail:row?.cells[0]?.textContent.trim()||'Weekly filter/strainer status is not acceptable.',target:'checklists-weekly'});});
     appData.workOrders.filter(w=>w.status!=='Completed'&&['Critical','High'].includes(w.priority)).forEach(w=>alarms.push({level:w.priority==='Critical'?'critical':'warning',icon:'🧰',title:`${w.priority} work order ${w.id}`,detail:`${w.asset}: ${w.desc}`,target:'work-orders'}));
     appData.spares.filter(x=>x.stock<=x.min||/Critical|Low/i.test(x.status||'')).forEach(x=>alarms.push({level:x.stock<x.min?'critical':'warning',icon:'📦',title:`Spare stock alert — ${x.part}`,detail:`${x.desc}: ${x.stock} in stock, minimum ${x.min}.`,target:'spares'}));
     if(syncConnectionState==='error'||syncConnectionState==='setup')alarms.push({level:'warning',icon:'☁️',title:'Cross-device synchronization needs attention',detail:syncConnectionState==='setup'?'Supabase table setup is required.':'The app is working offline and changes remain buffered.',target:'sync'});
@@ -4038,8 +4039,8 @@ function markStaffDutyDone(id){const x=appData.staff.find(s=>s.id===id);if(!x)re
 function decorateFullActionButtons(){
     document.querySelectorAll('#spares-table-body tr').forEach((row,i)=>{const cell=row.cells[row.cells.length-1];if(cell&&!cell.querySelector('.edit-spare'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-outline btn-sm edit-spare" onclick="editSpareRecord(${i})" ${currentUserRole==='Owner'?'':'disabled'}>Edit</button> <button class="btn btn-success btn-sm" onclick="markInventoryDone('spare',${i})">Done</button> `);});
     document.querySelectorAll('#tools-table-body tr').forEach((row,i)=>{const cell=row.cells[row.cells.length-1];if(cell&&!cell.querySelector('.edit-tool'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-outline btn-sm edit-tool" onclick="editToolRecord(${i})" ${currentUserRole==='Owner'?'':'disabled'}>Edit</button> <button class="btn btn-success btn-sm" onclick="markInventoryDone('tool',${i})">Done</button> `);});
-    document.querySelectorAll('#work-orders-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim(),cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.edit-wo'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-outline btn-sm edit-wo" onclick="editWorkOrderRecord('${id}')" ${currentUserRole==='Owner'?'':'disabled'}>Edit</button> `);});
-    document.querySelectorAll('#staff-table-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim(),cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.staff-done'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-success btn-sm staff-done" onclick="markStaffDutyDone('${id}')">Done</button> `);});
+    document.querySelectorAll('#work-orders-body tr').forEach(row=>{const id=row.cells[0]?.textContent.trim(),cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.edit-wo'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-outline btn-sm edit-wo" onclick="editWorkOrderRecord('${id}')" ${currentUserRole==='Owner'?'':'disabled'}>Edit</button> `);});
+    document.querySelectorAll('#staff-table-body tr').forEach(row=>{const id=row.cells[0]?.textContent.trim(),cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.staff-done'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-success btn-sm staff-done" onclick="markStaffDutyDone('${id}')">Done</button> `);});
     ['#yearly-archive-body','#detail-history-body'].forEach(sel=>document.querySelectorAll(`${sel} tr`).forEach(row=>{const edit=row.querySelector('button[onclick*="openUniversalEditModal"]'),id=edit?.getAttribute('onclick')?.match(/archive'\s*,\s*'([^']+)'/)?.[1],cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.done-log'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-success btn-sm done-log" onclick="markArchiveDone('${id}')">Done</button> `);}));
     const categories=[['home-husky-list','husky'],['home-compressor-list','compressor'],['home-cooling-list','cooling'],['home-chiller-list','chiller']];categories.forEach(([container,cat])=>{const assets=appData.assets.filter(a=>a.category===cat);document.querySelectorAll(`#${container} .asset-card-interactive`).forEach((card,i)=>{if(!card.querySelector('.asset-done-button')){const b=document.createElement('button');b.className='btn btn-success btn-sm asset-done-button';b.textContent='✓ Done';b.onclick=e=>{e.stopPropagation();markAssetDone(assets[i].id);};card.appendChild(b);}});});
 }
@@ -4091,8 +4092,51 @@ exportRowsPDF=async function(name,inputRows){
 
 
 renderedTableRows=function(table){
-    const headers=[...table.querySelectorAll('thead th')].map(x=>x.innerText.trim());
+    const headers=[...table.querySelectorAll('thead th')].map(x=>x.textContent.trim());
     return [...table.querySelectorAll('tbody tr')].filter(row=>row.style.display!=='none').map(row=>{const record={};[...row.cells].forEach((cell,index)=>{const controls=[...cell.querySelectorAll('input,select,textarea')].map(el=>el.type==='checkbox'?(el.checked?'Checked':'Not checked'):el.value).filter(Boolean);const visible=[...cell.childNodes].filter(node=>!(node.nodeType===1&&['BUTTON','SELECT','INPUT','TEXTAREA'].includes(node.tagName))).map(node=>node.textContent||'').join(' ').replace(/\s+/g,' ').trim();record[headers[index]||`Column ${index+1}`]=[visible,...controls].filter(Boolean).join(' | ');});return record;});
+};
+
+
+
+/* =========================================================
+   11:00 AM EMAIL ALARM & RELIABLE DELIVERY WORKFLOW
+   ========================================================= */
+function emailDispatchDue(){const now=new Date(),afterEleven=(now.getHours()>11)||(now.getHours()===11&&now.getMinutes()>=0),sentToday=String(appData.maintenance?.lastEmailSentAt||'').startsWith(localISODate());return afterEleven&&!sentToday;}
+const collectAlarmsBeforeEmailDue=collectActiveAlarms;
+collectActiveAlarms=function(){const alarms=collectAlarmsBeforeEmailDue();if(emailDispatchDue())alarms.unshift({level:'critical',icon:'📧',title:'11:00 AM daily maintenance email is due',detail:'Today’s verified report has not yet been recorded as sent. Open Email Sign-off, approve the report, and dispatch it.',target:'email-dispatch'});return alarms;};
+function buildDailyEmailPayload(){return {to:document.getElementById('target-owner-email').value.trim(),officer:document.getElementById('email-confirm-officer').value,note:document.getElementById('email-confirm-note').value,date:localISODate(),sentAt:localTimestamp(),subject:`[11:00 AM PKT Daily Dispatch] PlantMaster Pro Maintenance Report — ${localISODate()}`};}
+function finalizeEmailDispatch(method){const p=buildDailyEmailPayload();appData.maintenance=appData.maintenance||{};appData.maintenance.lastEmailSentAt=localTimestamp();appData.maintenance.lastEmailRecipient=p.to;appData.maintenance.lastEmailMethod=method;appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift:'General Shift',tech:p.officer,asset:'Plant-wide Report',type:'11:00 AM Email Dispatch',desc:`Delivered to ${p.to} using ${method}. ${p.note}`,supv:p.officer,status:'Sent'});setSaveContext('11:00 AM report sent','Email Dispatch → History → Alarm Center → Sync',`${p.to} via ${method}`);saveState();showEmailCompletion('sent');document.getElementById('manual-email-confirm-panel').style.display='none';renderAlarmCenter();alert('Email dispatch recorded successfully. The 11:00 AM email alarm is cleared.');}
+function gmailComposeURL(payload){const body=`PLANTMASTER PRO — DAILY EXECUTIVE REPORT\nDate: ${payload.date}\nVerified by: ${payload.officer}\n\nEXECUTIVE SUMMARY:\n${payload.note}\n\nPlant status, alarms, shift logs and checklist history are maintained in PlantMaster Pro.`;return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(payload.to)}&su=${encodeURIComponent(payload.subject)}&body=${encodeURIComponent(body)}`;}
+dispatch11amReport=async function(){
+    const approvedToday=isDailyConfirmed||(appData.yearlyArchive||[]).some(x=>x.type==='Daily Executive Approval'&&String(x.date).startsWith(localISODate()));if(!approvedToday&&!confirm('Today’s report is not confirmed. Continue to email composition?'))return;const payload=buildDailyEmailPayload();if(!payload.to){alert('Enter at least one recipient email address.');return;}
+    const button=document.querySelector('button[onclick="dispatch11amReport()"]');if(button){button.disabled=true;button.textContent='Sending securely…';}
+    try{const response=await fetch(`${SUPABASE_URL}/functions/v1/send-maintenance-report`,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});if(response.ok){finalizeEmailDispatch('Supabase Email Service');return;}throw new Error(`Email service ${response.status}`);}
+    catch(error){console.warn('Direct email service unavailable; opening Gmail compose',error);window.open(gmailComposeURL(payload),'_blank','noopener');document.getElementById('manual-email-confirm-panel').style.display='block';alert('Gmail compose has been opened with the complete report. Press Send in Gmail, then return and tap “I Sent the Email”.');}
+    finally{if(button){button.disabled=false;button.textContent='📧 Send 11:00 AM PKT Daily Maintenance Report Now';}
+    }
+};
+function confirmManualEmailSent(){finalizeEmailDispatch('Gmail Manual Confirmation');}
+setInterval(()=>{if(window.appUnlocked)renderAlarmCenter();},60000);
+
+
+
+function ensureRequiredCoolingPumpRecovery(){
+    if(appData.requiredCoolingPumpRecoveryV2)return;appData.requiredCoolingPumpRecoveryV2=true;
+    if(!appData.assets.some(a=>a.id==='CTP-4')){const source=defaultData.assets.find(a=>a.id==='CTP-4')||{id:'CTP-4',name:'Cooling Tower Pump #4 (250 kW)',category:'cooling',specs:'Provide cooling water for machines.',status:'operational',note:'Recovered 250 kW main cooling pump',motorPower:'250 kW Heavy Duty',oilCapacity:'Grease Bearings',isOn:false,description:'',descriptionEntries:[]};appData.assets.push(cloneRecord(source));addSystemActivity('Required asset recovered','Cooling Tower Assets → Recovery Audit → Sync','Cooling Tower Pump #4 (250 kW) restored.');localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));if(window.appUnlocked)setTimeout(()=>{setSaveContext('Cooling Tower Pump #4 restored','Assets → Cooling Tower → Sync','250 kW pump recovery completed.');saveState();},0);}
+}
+const renderAllBeforeRequiredPump=renderAll;
+renderAll=function(){ensureRequiredCoolingPumpRecovery();renderAllBeforeRequiredPump();};
+renderAll();
+
+
+
+let exportDownloadInProgress=false;
+exportRowsByFormat=async function(name,rows,format){
+    if(exportDownloadInProgress){showSaveDestination('A download is already being prepared. Please wait.');return;}
+    exportDownloadInProgress=true;const buttons=[...document.querySelectorAll('.table-export-bar button,#module-export-grid button')];buttons.forEach(b=>b.disabled=true);showSaveDestination(`Preparing ${String(format).toUpperCase()} download…`);
+    try{if(format==='csv')await exportRowsCSV(name,rows);else if(format==='excel')await exportRowsExcel(name,rows);else if(format==='word')await exportRowsWord(name,rows);else if(format==='pdf')await exportRowsPDF(name,rows);}
+    catch(error){console.error('Download generation failed',error);alert(`The ${format.toUpperCase()} download could not be completed: ${error.message||error}. Please try again.`);}
+    finally{exportDownloadInProgress=false;buttons.forEach(b=>b.disabled=false);}
 };
 
 </script>
