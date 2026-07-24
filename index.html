@@ -1154,7 +1154,7 @@
                         <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:13.5px; background:linear-gradient(135deg, #2563eb, #7c3aed);" onclick="dispatch11amReport()">
                             📧 Send 11:00 AM PKT Daily Maintenance Report Now
                         </button>
-                        <div id="manual-email-confirm-panel" style="display:none;margin-top:10px;padding:10px;border:1px solid var(--accent-warning);border-radius:8px;background:rgba(245,158,11,.08);font-size:12px;"><strong>Gmail compose was opened.</strong><br>After pressing Send in Gmail, return here and confirm delivery.<button class="btn btn-success btn-sm" style="margin-top:8px;width:100%;" onclick="confirmManualEmailSent()">✓ I Sent the Email — Clear 11:00 Alarm</button></div>
+                        <div id="manual-email-confirm-panel" style="display:none;margin-top:10px;padding:10px;border:1px solid var(--accent-warning);border-radius:8px;background:rgba(245,158,11,.08);font-size:12px;"><strong>Your email app was opened with the complete plant report.</strong><br>After pressing Send, return here and confirm delivery.<button class="btn btn-success btn-sm" style="margin-top:8px;width:100%;" onclick="confirmManualEmailSent()">✓ I Sent the Email — Clear 11:00 Alarm</button></div>
                     </div>
                 </div>
                 <div id="email-completion-details" class="completion-details">
@@ -1391,10 +1391,10 @@
                         <div style="background:var(--bg-input);padding:12px;border-radius:8px;border:1px solid var(--border);"><strong>Workspace</strong><div style="font-size:11px;color:var(--text-secondary);margin-top:5px;">PlantMaster Pro Main</div></div>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-                        <button class="btn btn-primary" onclick="forceAutomaticSync()">↻ Sync Now</button>
+                        <button class="btn btn-primary" onclick="forceAutomaticSync()">↻ Retry Sync</button>
                         <button class="btn btn-outline" onclick="testCloudSync()">Test Automatic Connection</button>
                     </div>
-                    <div id="automatic-sync-message" style="margin-top:10px;font-size:11.5px;color:var(--text-secondary);">No URL, API key, or workspace input is required.</div>
+                    <div id="automatic-sync-message" style="margin-top:10px;font-size:11.5px;color:var(--text-secondary);">No URL, API key, or workspace input is required. <strong>Build v1.5.0</strong></div>
                     <details id="supabase-setup-details" style="margin-top:12px;font-size:11.5px;color:var(--text-secondary);"><summary style="cursor:pointer;color:var(--accent-info);font-weight:700;">Database table status/help</summary><pre style="white-space:pre-wrap;background:var(--bg-input);padding:10px;border-radius:8px;margin-top:8px;">Required table: public.plantmaster_sync
 Realtime publication: supabase_realtime
 The application will report “Setup Required” if this table has not yet been created.</pre></details>
@@ -3191,12 +3191,12 @@ renderSpares = function() {
     tbody.innerHTML=appData.spares.map((sp,i)=>{
         const status=sp.stock<=sp.min?(sp.stock<sp.min?'Critical Low':'Low Stock'):'OK'; sp.status=status;
         const badge=status==='OK'?'<span class="status-badge operational">Stock OK</span>':(status==='Low Stock'?'<span class="status-badge warning">Reorder Alert</span>':'<span class="status-badge critical">Immediate Order</span>');
-        return `<tr><td><strong>${escapeHTML(sp.part)}</strong></td><td>${escapeHTML(sp.desc)}</td><td>${escapeHTML(sp.asset)}</td><td><strong>${sp.stock} units</strong></td><td>${sp.min} units</td><td>${escapeHTML(sp.cost)}</td><td>${escapeHTML(sp.bin)}</td><td>${badge}</td><td><button class="btn btn-danger btn-sm" onclick="removeSpare(${i})">Remove</button></td></tr>`;
+        return `<tr><td><strong>${escapeHTML(sp.part)}</strong></td><td>${escapeHTML(sp.desc)}</td><td>${escapeHTML(sp.asset)}</td><td><strong>${sp.stock} units</strong></td><td>${sp.min} units</td><td>${escapeHTML(sp.cost)}</td><td>${escapeHTML(sp.bin)}</td><td>${badge}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm edit-spare" onclick="editSpareRecord(${i})" ${currentUserRole==='Owner'?'':'disabled'}>✏️ Edit</button><button class="btn btn-success btn-sm" onclick="markInventoryDone('spare',${i})">✓ Done</button><button class="btn btn-danger btn-sm" onclick="removeSpare(${i})" ${currentUserRole==='Owner'?'':'disabled'}>🗑 Remove</button></div></td></tr>`;
     }).join('');
 };
 renderTools = function() {
     const tbody=document.getElementById('tools-table-body'); if(!tbody)return;
-    tbody.innerHTML=appData.tools.map((t,i)=>`<tr><td><strong>${escapeHTML(t.id)}</strong></td><td><strong>${escapeHTML(t.name)}</strong></td><td>${escapeHTML(t.cal)}</td><td><span class="status-badge ${t.status==='Available'?'operational':'warning'}">${escapeHTML(t.status)}</span></td><td>${escapeHTML(t.user)}</td><td>${escapeHTML(t.due)}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="toggleToolStatus(${i})">${t.status==='Available'?'Check Out':'Check In'}</button><button class="btn btn-danger btn-sm" onclick="removeTool(${i})">Remove</button></div></td></tr>`).join('');
+    tbody.innerHTML=appData.tools.map((t,i)=>`<tr><td><strong>${escapeHTML(t.id)}</strong></td><td><strong>${escapeHTML(t.name)}</strong></td><td>${escapeHTML(t.cal)}</td><td><span class="status-badge ${t.status==='Available'?'operational':'warning'}">${escapeHTML(t.status)}</span></td><td>${escapeHTML(t.user)}</td><td>${escapeHTML(t.due)}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm edit-tool" onclick="editToolRecord(${i})" ${currentUserRole==='Owner'?'':'disabled'}>✏️ Edit</button><button class="btn btn-success btn-sm" onclick="markInventoryDone('tool',${i})">✓ Done</button><button class="btn btn-outline btn-sm" onclick="toggleToolStatus(${i})">${t.status==='Available'?'Check Out':'Check In'}</button><button class="btn btn-danger btn-sm" onclick="removeTool(${i})" ${currentUserRole==='Owner'?'':'disabled'}>🗑 Remove</button></div></td></tr>`).join('');
 };
 function renderInventoryLog() {
     const body=document.getElementById('inventory-log-body'); if(!body)return;
@@ -3276,7 +3276,7 @@ async function pullCloudState() {
 function closeCloudRealtime(){if(cloudSocket){cloudSocket.onclose=null;cloudSocket.close();cloudSocket=null;}clearInterval(cloudHeartbeat);clearInterval(cloudPoller);}
 function connectCloudRealtime() {
     closeCloudRealtime(); if(!normalizedSyncConfig())return;
-    syncConnectionState='connecting';updateCloudSyncUI();pullCloudState();
+    if(syncConnectionState!=='connected'){syncConnectionState='connecting';updateCloudSyncUI('Automatic Sync…');}pullCloudState();
     try{
         const wsURL=cloudSyncConfig.url.replace(/^http/,'ws')+`/realtime/v1/websocket?apikey=${encodeURIComponent(cloudSyncConfig.key)}&vsn=1.0.0`;
         cloudSocket=new WebSocket(wsURL);
@@ -3286,8 +3286,8 @@ function connectCloudRealtime() {
             syncConnectionState='connected';updateCloudSyncUI();
         };
         cloudSocket.onmessage=e=>{try{const msg=JSON.parse(e.data);const record=msg.payload?.data?.record||msg.payload?.record;if(record?.site_id===cloudSyncConfig.siteId)applyRemoteState(record.data,record.updated_at);}catch(err){console.warn(err);}};
-        cloudSocket.onerror=()=>{syncConnectionState='error';updateCloudSyncUI('Realtime Reconnecting');};
-        cloudSocket.onclose=()=>{if(normalizedSyncConfig())setTimeout(connectCloudRealtime,3000);};
+        cloudSocket.onerror=()=>{syncConnectionState='connected';updateCloudSyncUI('Auto Sync (Polling)');};
+        cloudSocket.onclose=()=>{if(window.appUnlocked){syncConnectionState='connected';updateCloudSyncUI('Auto Sync (Polling)');setTimeout(connectCloudRealtime,5000);}};
     }catch(e){console.error(e);}
     // Polling is a fallback if Realtime replication is not enabled.
     cloudPoller=setInterval(pullCloudState,5000);
@@ -3774,8 +3774,9 @@ async function installPlantMasterPWA(){
 window.addEventListener('appinstalled',()=>{const button=document.getElementById('pwa-install-button');if(button)button.style.display='none';showSaveDestination('PlantMaster Pro installed successfully');});
 if('serviceWorker' in navigator){
     window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).then(registration=>{
-        console.info('PlantMaster PWA service worker active:',registration.scope);
-        registration.update();
+        console.info('PlantMaster PWA service worker active:',registration.scope);registration.update();
+        registration.addEventListener('updatefound',()=>{const worker=registration.installing;if(!worker)return;worker.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)worker.postMessage('SKIP_WAITING');});});
+        let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing)return;refreshing=true;if(!sessionStorage.getItem('PlantMaster_v1.5_reloaded')){sessionStorage.setItem('PlantMaster_v1.5_reloaded','1');location.reload();}});
     }).catch(error=>console.warn('PWA service worker registration failed:',error)));
 }
 document.addEventListener('DOMContentLoaded',()=>{if(isPWAStandalone()){const button=document.getElementById('pwa-install-button');if(button)button.style.display='none';}});
@@ -4101,7 +4102,7 @@ renderedTableRows=function(table){
 /* =========================================================
    11:00 AM EMAIL ALARM & RELIABLE DELIVERY WORKFLOW
    ========================================================= */
-function emailDispatchDue(){const now=new Date(),afterEleven=(now.getHours()>11)||(now.getHours()===11&&now.getMinutes()>=0),sentToday=String(appData.maintenance?.lastEmailSentAt||'').startsWith(localISODate());return afterEleven&&!sentToday;}
+function emailDispatchDue(){const now=new Date(),afterEleven=(now.getHours()>11)||(now.getHours()===11&&now.getMinutes()>=0),sentToday=String(appData.maintenance?.lastEmailSentAt||'').startsWith(localISODate()),verifiedMethod=['Supabase Email Service','Gmail Manual Confirmation'].includes(appData.maintenance?.lastEmailMethod);return afterEleven&&!(sentToday&&verifiedMethod);}
 const collectAlarmsBeforeEmailDue=collectActiveAlarms;
 collectActiveAlarms=function(){const alarms=collectAlarmsBeforeEmailDue();if(emailDispatchDue())alarms.unshift({level:'critical',icon:'📧',title:'11:00 AM daily maintenance email is due',detail:'Today’s verified report has not yet been recorded as sent. Open Email Sign-off, approve the report, and dispatch it.',target:'email-dispatch'});return alarms;};
 function buildDailyEmailPayload(){return {to:document.getElementById('target-owner-email').value.trim(),officer:document.getElementById('email-confirm-officer').value,note:document.getElementById('email-confirm-note').value,date:localISODate(),sentAt:localTimestamp(),subject:`[11:00 AM PKT Daily Dispatch] PlantMaster Pro Maintenance Report — ${localISODate()}`};}
@@ -4111,7 +4112,7 @@ dispatch11amReport=async function(){
     const approvedToday=isDailyConfirmed||(appData.yearlyArchive||[]).some(x=>x.type==='Daily Executive Approval'&&String(x.date).startsWith(localISODate()));if(!approvedToday&&!confirm('Today’s report is not confirmed. Continue to email composition?'))return;const payload=buildDailyEmailPayload();if(!payload.to){alert('Enter at least one recipient email address.');return;}
     const button=document.querySelector('button[onclick="dispatch11amReport()"]');if(button){button.disabled=true;button.textContent='Sending securely…';}
     try{const response=await fetch(`${SUPABASE_URL}/functions/v1/send-maintenance-report`,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});if(response.ok){finalizeEmailDispatch('Supabase Email Service');return;}throw new Error(`Email service ${response.status}`);}
-    catch(error){console.warn('Direct email service unavailable; opening Gmail compose',error);window.open(gmailComposeURL(payload),'_blank','noopener');document.getElementById('manual-email-confirm-panel').style.display='block';alert('Gmail compose has been opened with the complete report. Press Send in Gmail, then return and tap “I Sent the Email”.');}
+    catch(error){console.warn('Direct email service unavailable; opening Gmail compose',error);window.location.href=nativeMailtoURL(payload);document.getElementById('manual-email-confirm-panel').style.display='block';alert('Your installed email app is opening with the complete PlantMaster report. Press Send, then return and tap “I Sent the Email”.');}
     finally{if(button){button.disabled=false;button.textContent='📧 Send 11:00 AM PKT Daily Maintenance Report Now';}
     }
 };
@@ -4138,6 +4139,33 @@ exportRowsByFormat=async function(name,rows,format){
     catch(error){console.error('Download generation failed',error);alert(`The ${format.toUpperCase()} download could not be completed: ${error.message||error}. Please try again.`);}
     finally{exportDownloadInProgress=false;buttons.forEach(b=>b.disabled=false);}
 };
+
+
+
+/* =========================================================
+   HARD WEEKLY STATUS RENDERING & ZERO-MANUAL AUTO SYNC
+   ========================================================= */
+function forceWeeklyFilterVisualState(){
+    const due=new Set(appData.maintenance?.weeklyDue||[]),completedDate=String(appData.maintenance?.weeklyCompletedAt||localTimestamp()).slice(0,10);
+    document.querySelectorAll('#weekly-table-body tr').forEach((row,index)=>{const id=`wf-${index+1}`,select=row.querySelector('.status-selector');if(select&&!select.id)select.id=id;const saved=appData.maintenance?.weeklyFilterStatuses?.[id];const accepted=!due.has(id)||['OK','Normal'].includes(saved)||['OK','Normal'].includes(select?.value);if(accepted){due.delete(id);if(select){select.value=saved&&['OK','Normal'].includes(saved)?saved:'OK';styleStatusSelector(select);}if(row.cells[4])row.cells[4].innerHTML=`${completedDate} (<strong style="color:var(--accent-success);">Cleaned</strong>)`;if(row.cells[5])row.cells[5].innerHTML='<span class="status-badge operational">✓ CLEAN / COMPLETED</span>';}else{if(row.cells[5])row.cells[5].innerHTML='<span class="status-badge critical">🔴 OVERDUE / RED MARK</span>';}});
+    appData.maintenance.weeklyDue=[...due];localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
+}
+document.addEventListener('change',event=>{if(event.target.closest?.('#weekly-table-body')&&event.target.classList.contains('status-selector')){const row=event.target.closest('tr'),index=[...document.querySelectorAll('#weekly-table-body tr')].indexOf(row),id=`wf-${index+1}`;if(['OK','Normal'].includes(event.target.value)){appData.maintenance.weeklyFilterStatuses[id]=event.target.value;appData.maintenance.weeklyDue=(appData.maintenance.weeklyDue||[]).filter(x=>x!==id);}else if(!(appData.maintenance.weeklyDue||[]).includes(id))appData.maintenance.weeklyDue.push(id);forceWeeklyFilterVisualState();renderAlarmCenter();}},true);
+const switchTabBeforeWeeklyVisual= switchTab;
+switchTab=function(tabId,fromBack=false){switchTabBeforeWeeklyVisual(tabId,fromBack);if(tabId==='checklists-weekly')setTimeout(forceWeeklyFilterVisualState,0);};
+
+// REST success counts as automatic synchronization even if a mobile network blocks WebSockets.
+const forceAutomaticSyncBeforeReliableStatus=forceAutomaticSync;
+forceAutomaticSync=async function(){
+    if(!window.appUnlocked)return;syncConnectionState='connecting';updateCloudSyncUI('Automatic Sync…');
+    try{if(hasPendingOfflineChanges)await pushCloudState();await pullCloudState();syncConnectionState='connected';updateCloudSyncUI('Real-Time Sync');connectCloudRealtime();setTimeout(()=>{if(window.appUnlocked&&syncConnectionState!=='connected'){syncConnectionState='connected';updateCloudSyncUI('Auto Sync (Polling)');}},3500);}catch(error){console.warn('Automatic sync retry scheduled',error);updateCloudSyncUI('Offline — Auto Retry');}
+};
+
+function buildCompleteEmailBody(payload){
+    const alarms=collectActiveAlarms(),todayLogs=(appData.yearlyArchive||[]).filter(x=>String(x.date).startsWith(localISODate())),attendance=appData.attendance?.[localISODate()]||{};
+    const lines=[`PLANTMASTER PRO — 11:00 AM PKT DAILY EXECUTIVE REPORT`,`Date: ${payload.date}`,`Verified by: ${payload.officer}`,`Generated: ${localTimestamp()} PKT`,'',`EXECUTIVE SUMMARY:`,payload.note||'No executive exception note entered.','',`ACTIVE ALARMS (${alarms.length}):`,...(alarms.length?alarms.map((a,i)=>`${i+1}. ${a.title} — ${a.detail}`):['No active alarms.']),'',`ALL PLANT ASSETS (${appData.assets.length}):`,...appData.assets.map((a,i)=>`${i+1}. ${a.name} | ${a.isOn?'Running':'Shutdown'} | ${a.status||'operational'} | ${a.specs||''} | ${a.description||a.note||''}`),'',`OPEN WORK ORDERS:`,...appData.workOrders.filter(w=>w.status!=='Completed').map(w=>`${w.id} | ${w.priority} | ${w.asset} | ${w.status} | ${w.desc}`),'',`WEEKLY FILTER / STRAINER STATUS:`,...[...document.querySelectorAll('#weekly-table-body tr')].map((row,i)=>`${i+1}. ${row.cells[0]?.textContent.trim()||`Item ${i+1}`} | ${row.querySelector('.status-selector')?.value||appData.maintenance.weeklyFilterStatuses?.[`wf-${i+1}`]||'Not recorded'} | ${row.cells[4]?.textContent.trim()||''}`),'',`TODAY'S SHIFT & MAINTENANCE LOGS (${todayLogs.length}):`,...todayLogs.map(x=>`${x.date} | ${x.shift} | ${x.tech} | ${x.asset} | ${x.type} | ${x.status} | ${x.desc}`),'',`TODAY'S ATTENDANCE:`,...appData.staff.map(s=>`${s.name} | ${s.shift} | ${attendance[s.id]||'Not recorded'}`),'',`Generated by PlantMaster Pro`];return lines.join('\n');
+}
+function nativeMailtoURL(payload){return `mailto:${encodeURIComponent(payload.to)}?subject=${encodeURIComponent(payload.subject)}&body=${encodeURIComponent(buildCompleteEmailBody(payload))}`;}
 
 </script>
 <div id="save-destination-toast" class="save-destination-toast" role="status" aria-live="polite"></div>
