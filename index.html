@@ -580,6 +580,7 @@
                     <button class="home-nav-btn" onclick="switchTab('roster')">👥 Roster & Attendance<small>Calendar and daily sheet</small></button>
                     <button class="home-nav-btn" onclick="switchTab('spares')">📦 Spares & Tools<small>Inventory and checkout</small></button>
                     <button class="home-nav-btn" onclick="switchTab('reports')">📊 Reports & Backup<small>Export, print and restore</small></button>
+                    <button class="home-nav-btn" onclick="switchTab('recovery')">♻ Recovery Center<small>Owner can restore accidentally removed records</small></button>
                 </div>
 
             </div>
@@ -588,7 +589,7 @@
             <div id="tab-assets" class="tab-content">
                 <div class="section-header">
                     <div class="section-title"><h3>Plant Assets Directory</h3><p>All machines, compressors, cooling-tower equipment, chillers and pumps.</p></div>
-                    <button class="btn btn-outline btn-sm" onclick="switchTab('dashboard')">← Back to Home</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-success btn-sm" onclick="openAddAssetPrompt()">＋ Add Asset</button><button class="btn btn-warning btn-sm" onclick="switchTab('recovery')">♻ Recovery</button><button class="btn btn-outline btn-sm" onclick="switchTab('dashboard')">← Back to Home</button></div>
                 </div>
                 <!-- Line 1: Husky Molding Machines (5) -->
                 <div class="asset-hub-category">
@@ -635,6 +636,12 @@
                     <div style="display:flex;gap:8px;"><span id="alarm-center-count" class="status-badge critical">0 Active</span><button class="btn btn-outline btn-sm" onclick="switchTab('dashboard')">← Home</button></div>
                 </div>
                 <div id="alarm-center-list" class="grid-2"></div>
+            </div>
+
+            <!-- OWNER RECOVERY CENTER -->
+            <div id="tab-recovery" class="tab-content">
+                <div class="section-header"><div class="section-title"><h3>Recycle Bin & Recovery Center</h3><p>Removed records remain recoverable. Only the Owner can restore or permanently erase them.</p></div><button class="btn btn-outline btn-sm" onclick="switchTab('dashboard')">← Home</button></div>
+                <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;"><h4>Recoverable Records</h4><span id="recovery-count" class="status-badge info">0 Items</span></div><div class="table-container"><table><thead><tr><th>Removed At</th><th>Type</th><th>Record</th><th>Removed By</th><th>Actions</th></tr></thead><tbody id="recovery-table-body"></tbody></table></div></div>
             </div>
 
             <!-- TAB 2: 360° ASSET DETAIL VIEW -->
@@ -873,7 +880,7 @@
                         <h3>Weekly Maintenance Schedule: Filters & Strainers Cleaning Protocol</h3>
                         <p>Mandatory weekly cleaning protocol (`Items marked RED are overdue > 7 days`)</p>
                     </div>
-                    <button class="btn btn-primary" onclick="requirePermission(() => submitWeeklyChecklist(), 'Sign Off Weekly Filters Cleaning')">✓ Sign Off & Clear Weekly Red Marks</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-success" onclick="completeAllFilterCleaning()">✓ Mark All Filters Clean / Done</button><button class="btn btn-primary" onclick="requirePermission(() => submitWeeklyChecklist(), 'Sign Off Weekly Filters Cleaning')">✓ Sign Off & Clear Weekly Red Marks</button></div>
                 </div>
 
                 <div class="shift-submission-box" style="border-color:var(--accent-success);">
@@ -1601,7 +1608,6 @@ The application will report “Setup Required” if this table has not yet been 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
@@ -1867,6 +1873,7 @@ function switchTab(tabId) {
     if (tabId === "dashboard") { titleEl.textContent = "PlantMaster Home Dashboard"; subEl.textContent = "Quick access to assets, alarms, checklists, attendance, work orders, reports and synchronization"; }
     if (tabId === "assets") { titleEl.textContent = "Plant Assets Directory"; subEl.textContent = "Machines, compressors, cooling tower, chillers and all pumps"; }
     if (tabId === "alarms") { titleEl.textContent = "Plant Alarm Center"; subEl.textContent = "Live alarms from maintenance, checklists, shutdowns, work orders and inventory"; renderAlarmCenter(); }
+    if (tabId === "recovery") { titleEl.textContent = "Recycle Bin & Recovery Center"; subEl.textContent = "Owner-only restoration of removed plant records"; renderRecoveryCenter(); }
     if (tabId === "asset-detail") { titleEl.textContent = "360° Asset Detail & Shift Log View"; subEl.textContent = "Complete technical parameters, multi-year history, and direct shift action center"; }
     if (tabId === "checklists-daily") { titleEl.textContent = "Daily Shift Checklists (A, B, C Shifts)"; subEl.textContent = "Select Shift A, B, or C, fill parameter verification readings (`Your name is auto-locked`)"; }
     if (tabId === "checklists-weekly") { titleEl.textContent = "Weekly Filters & Strainers Schedule"; subEl.textContent = "Mandatory weekly cleaning protocol (`Items marked RED are overdue > 7 days`)"; }
@@ -3493,7 +3500,8 @@ function renderSystemActivity(){const body=document.getElementById('system-activ
 // Owner has exclusive edit/delete/configuration rights. Other roles retain read access and append operational logs/assignments.
 const requirePermissionBeforeOwnerPolicy=requirePermission;
 requirePermission=function(callback,description=''){
-    const ownerOnly=/Edit|Modify|Remove|Reset|Transfer|PIN|Add New Spare|Add New Tool|Add New Team Member|Import Master|Register New Tool/i.test(description);
+    const ownerOnly=/Edit|Modify|Remove|Reset|Transfer|PIN|Import Master/i.test(description);
+    if(/Add New|Create New|Register New|Assign Work/i.test(description)&&window.appUnlocked){callback();return;}
     if(!ownerOnly)return requirePermissionBeforeOwnerPolicy(callback,description);
     if(currentUserRole==='Owner'){callback();return;}
     pendingOwnerOnlyPermission=true;pendingActionCallback=callback;document.getElementById('permission-action-title').textContent=`Owner-only editing permission: ${description}`;document.getElementById('permission-pin-input').value='';document.getElementById('permission-error-msg').style.display='none';openModal('modal-permission');
@@ -3856,7 +3864,7 @@ attemptApplicationLogin=async function(){
         return;
     }
     appData=remoteData;currentUserName=identity.name;currentUserRole=identity.role;currentUserPIN=pin;localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));
-    completeApplicationUnlock();startSessionHeartbeat();
+    completeApplicationUnlock();startSessionHeartbeat();setTimeout(()=>forceAutomaticSync(),250);
 };
 async function renewActiveDeviceSession(){
     if(!activeDeviceSession||!navigator.onLine)return;
@@ -3978,6 +3986,7 @@ function renderAlarmCenter(){
     if(list)list.innerHTML=alarms.length?alarms.map((a,i)=>`<div class="card" style="border-left:4px solid var(--accent-${a.level==='critical'?'danger':'warning'});"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><div><h4>${a.icon} ${escapeHTML(a.title)}</h4><p style="font-size:12px;color:var(--text-secondary);margin-top:6px;">${escapeHTML(a.detail)}</p></div><span class="status-badge ${a.level}">${a.level.toUpperCase()}</span></div><button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="switchTab('${a.target}')">Open Source</button></div>`).join(''):'<div class="card" style="grid-column:1/-1;text-align:center;border-color:var(--accent-success);"><div style="font-size:35px;">✅</div><h4 style="color:var(--accent-success);">No active alarms</h4><p style="font-size:12px;color:var(--text-secondary);">All monitored maintenance, filters, work orders and inventory thresholds are clear.</p></div>';
     const header=document.getElementById('overdue-header-count'),pulse=document.getElementById('overdue-pulse'),menu=document.getElementById('menu-alarm-count');
     if(header){header.textContent=`${alarms.length} Alarm${alarms.length===1?'':'s'}`;header.style.color=alarms.length?'#ff6b6b':'var(--accent-success)';}if(pulse)pulse.classList.toggle('danger',alarms.length>0);if(menu)menu.textContent=alarms.length;
+    const overdueText=document.getElementById('overdue-banner-text'),maintenanceMessages=[];appData.assets.filter(a=>a.category==='husky'&&a.cycles>=118800&&!(appData.maintenance?.dismissedAssetAlerts||[]).includes(a.id)).forEach(a=>maintenanceMessages.push(`${a.name}: ${Number(a.cycles).toLocaleString()} cycles`));if((appData.maintenance?.weeklyDue||[]).length)maintenanceMessages.push(`${appData.maintenance.weeklyDue.length} weekly filter item(s) require cleaning`);if(overdueText)overdueText.textContent=maintenanceMessages.join(' • ')||'No overdue maintenance items.';
 }
 const checkOverdueBeforeFullAlarms=checkOverdueRedMarks;
 checkOverdueRedMarks=function(){checkOverdueBeforeFullAlarms();renderAlarmCenter();};
@@ -3985,67 +3994,106 @@ checkOverdueRedMarks=function(){checkOverdueBeforeFullAlarms();renderAlarmCenter
 
 
 /* =========================================================
-   APP-STYLE VISUAL DOWNLOAD ENGINE (EXCEL / WORD / PDF)
+   SOFT DELETE, RECOVERY, AND COMPLETE ADD/EDIT/DONE ACTIONS
    ========================================================= */
-function visualReportChunks(name,inputRows){
-    const rows=cleanRows(inputRows),headers=orderedHeaders(rows),chunks=[];const chunkSize=headers.length>8?8:(headers.length>5?12:18);
-    if(!rows.length)return [];
-    for(let offset=0;offset<rows.length;offset+=chunkSize){
-        const group=rows.slice(offset,offset+chunkSize),wrap=document.createElement('div');wrap.style.cssText=`position:fixed;left:-20000px;top:0;width:${Math.max(1050,headers.length*125)}px;background:#000;color:#f8fafc;padding:22px;font-family:Arial,sans-serif;z-index:-1;`;
-        wrap.innerHTML=`<div style="background:#0c0c0c;border:1px solid #222;border-radius:12px;padding:18px;"><div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #222;padding-bottom:12px;margin-bottom:12px;"><div><div style="font-size:22px;font-weight:800;color:#60a5fa;">PlantMaster Pro</div><div style="font-size:16px;font-weight:700;margin-top:4px;">${escapeHTML(name)}</div></div><div style="font-size:11px;color:#94a3b8;text-align:right;">Exported: ${escapeHTML(localTimestamp())}<br>Records ${offset+1}–${offset+group.length} of ${rows.length}</div></div><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;"><thead><tr>${headers.map(h=>`<th style="background:#050505;color:#94a3b8;border:1px solid #283244;padding:8px;text-align:left;vertical-align:top;overflow-wrap:anywhere;">${escapeHTML(h)}</th>`).join('')}</tr></thead><tbody>${group.map((row,i)=>`<tr>${headers.map(h=>`<td style="background:${i%2?'#0a0a0a':'#111827'};color:#f8fafc;border:1px solid #283244;padding:8px;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;">${escapeHTML(String(row[h]??''))}</td>`).join('')}</tr>`).join('')}</tbody></table><div style="margin-top:10px;font-size:10px;color:#64748b;text-align:right;">PlantMaster Pro • Secure synchronized plant record</div></div>`;
-        document.body.appendChild(wrap);chunks.push(wrap);
-    }
-    return chunks;
+appData.recycleBin=appData.recycleBin||[];
+function cloneRecord(value){return JSON.parse(JSON.stringify(value));}
+function putInRecycleBin(type,record,label,extra={}){const item={id:`REC-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,type,label,record:cloneRecord(record),extra:cloneRecord(extra),removedAt:localTimestamp(),removedBy:currentUserName};appData.recycleBin.unshift(item);return item;}
+// Restore the accidentally removed 250 kW Cooling Tower Pump #4 automatically.
+(function ensureCoolingTowerPump4(){if(!appData.assets.some(a=>a.id==='CTP-4')){const original=defaultData.assets.find(a=>a.id==='CTP-4')||{id:'CTP-4',name:'Cooling Tower Pump #4 (250 kW)',category:'cooling',specs:'Provide cooling water for machines.',status:'operational',note:'Motor & impeller inspection required',motorPower:'250 kW Heavy Duty',oilCapacity:'Grease Bearings',isOn:false,description:'',descriptionEntries:[]};appData.assets.push(cloneRecord(original));addSystemActivity('Cooling Tower Pump #4 recovered automatically','Assets → Cooling Tower → Recovery Audit → Sync','250 kW pump restored after accidental removal.');localStorage.setItem('PlantMasterPro_Master9593Data',JSON.stringify(appData));}})();
+
+removeArchiveRecord=function(recordId){if(!ownerDeleteAllowed())return;const i=appData.yearlyArchive.findIndex(x=>x.id===recordId);if(i<0)return;const item=appData.yearlyArchive[i];if(!confirm(`Move historical record ${item.id} to Recovery?`))return;putInRecycleBin('archive',item,`${item.id} — ${item.type}`);appData.yearlyArchive.splice(i,1);setSaveContext('History moved to Recovery','Yearly Archive → Recovery Center → Sync',item.id);saveState();};
+removeWorkOrderRecord=function(id){if(!ownerDeleteAllowed())return;const i=appData.workOrders.findIndex(x=>x.id===id);if(i<0)return;const item=appData.workOrders[i];if(!confirm(`Move work order ${id} to Recovery?`))return;putInRecycleBin('workOrder',item,`${id} — ${item.asset}`);appData.workOrders.splice(i,1);setSaveContext('Work order moved to Recovery','Work Orders → Recovery Center → Sync',id);saveState();};
+removeTeamAssignmentRecord=function(id){if(!ownerDeleteAllowed())return;const i=appData.taskAssignments.findIndex(x=>x.id===id);if(i<0)return;const item=appData.taskAssignments[i];if(!confirm(`Move assignment ${id} to Recovery?`))return;putInRecycleBin('assignment',item,`${id} — ${item.assignee}`);appData.taskAssignments.splice(i,1);setSaveContext('Assignment moved to Recovery','Assignments → Recovery Center → Sync',id);saveState();};
+removeStaffRecord=function(id){if(!ownerDeleteAllowed())return;const i=appData.staff.findIndex(x=>x.id===id);if(i<0)return;const item=appData.staff[i];if(item.name===appData.masterOwnerName){alert('The Master Owner cannot be removed.');return;}if(!confirm(`Move ${item.name} to Recovery?`))return;putInRecycleBin('staff',item,`${item.id} — ${item.name}`);appData.staff.splice(i,1);appData.taskAssignments.forEach(t=>{if(t.assigneeId===id){t.assigneeId='';t.assignee='Unassigned';}});setSaveContext('Employee moved to Recovery','Roster → Recovery Center → Sync',item.name);saveState();};
+removeAssetRecord=function(id){if(!ownerDeleteAllowed())return;const i=appData.assets.findIndex(x=>x.id===id);if(i<0)return;const asset=appData.assets[i];if(!confirm(`Move ${asset.name} and its active links to Recovery?`))return;const links={workOrders:appData.workOrders.filter(x=>x.asset===asset.name),assignments:appData.taskAssignments.filter(x=>x.assetId===id)};putInRecycleBin('asset',asset,`${asset.id} — ${asset.name}`,links);appData.assets.splice(i,1);appData.workOrders=appData.workOrders.filter(x=>x.asset!==asset.name);appData.taskAssignments=appData.taskAssignments.filter(x=>x.assetId!==id);selectedAssetId=appData.assets[0]?.id||'';setSaveContext('Asset moved to Recovery','Assets → Recovery Center → Sync',asset.name);saveState();switchTab('assets');};
+removeSpare=function(index){if(!ownerDeleteAllowed())return;const item=appData.spares[index];if(!item||!confirm(`Move spare ${item.part} to Recovery?`))return;putInRecycleBin('spare',item,`${item.part} — ${item.desc}`);appData.spares.splice(index,1);setSaveContext('Spare moved to Recovery','Spares → Recovery Center → Sync',item.part);saveState();};
+removeTool=function(index){if(!ownerDeleteAllowed())return;const item=appData.tools[index];if(!item||!confirm(`Move tool ${item.id} to Recovery?`))return;putInRecycleBin('tool',item,`${item.id} — ${item.name}`);appData.tools.splice(index,1);setSaveContext('Tool moved to Recovery','Tools → Recovery Center → Sync',item.id);saveState();};
+removeAssetDescriptionEntry=function(assetId,entryId){if(!ownerDeleteAllowed())return;const asset=appData.assets.find(a=>a.id===assetId),i=asset?.descriptionEntries?.findIndex(e=>e.id===entryId);if(!asset||i<0)return;const entry=asset.descriptionEntries[i];if(!confirm('Move this description entry to Recovery?'))return;putInRecycleBin('description',entry,`${asset.name} description`,{assetId});asset.descriptionEntries.splice(i,1);asset.description=asset.descriptionEntries[0]?.text||'';setSaveContext('Description moved to Recovery','Asset Description → Recovery Center → Sync',asset.name);saveState();};
+
+function recoverRecord(recoveryId){
+    if(currentUserRole!=='Owner'){alert('Only the Owner can recover removed records.');return;}const i=appData.recycleBin.findIndex(x=>x.id===recoveryId);if(i<0)return;const item=appData.recycleBin[i],r=cloneRecord(item.record);
+    if(item.type==='asset'){if(!appData.assets.some(x=>x.id===r.id))appData.assets.push(r);(item.extra.workOrders||[]).forEach(x=>{if(!appData.workOrders.some(w=>w.id===x.id))appData.workOrders.push(x);});(item.extra.assignments||[]).forEach(x=>{if(!appData.taskAssignments.some(t=>t.id===x.id))appData.taskAssignments.push(x);});}
+    else if(item.type==='archive'&&!appData.yearlyArchive.some(x=>x.id===r.id))appData.yearlyArchive.unshift(r);
+    else if(item.type==='workOrder'&&!appData.workOrders.some(x=>x.id===r.id))appData.workOrders.unshift(r);
+    else if(item.type==='assignment'&&!appData.taskAssignments.some(x=>x.id===r.id))appData.taskAssignments.unshift(r);
+    else if(item.type==='staff'&&!appData.staff.some(x=>x.id===r.id))appData.staff.push(r);
+    else if(item.type==='spare'&&!appData.spares.some(x=>x.part===r.part))appData.spares.push(r);
+    else if(item.type==='tool'&&!appData.tools.some(x=>x.id===r.id))appData.tools.push(r);
+    else if(item.type==='description'){const asset=appData.assets.find(a=>a.id===item.extra.assetId);if(asset&&!asset.descriptionEntries.some(x=>x.id===r.id)){asset.descriptionEntries.unshift(r);asset.description=r.text;}}
+    appData.recycleBin.splice(i,1);setSaveContext('Record recovered',`${item.type} → Original Module → Recovery Audit → Sync`,item.label);saveState();renderRecoveryCenter();
 }
-async function captureVisualReport(name,rows){
-    const ready=await ensureExportLibrary(()=>!!window.html2canvas,'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');if(!ready)throw new Error('Visual rendering library could not load.');
-    const nodes=visualReportChunks(name,rows),canvases=[];
-    try{for(const node of nodes){canvases.push(await html2canvas(node,{backgroundColor:'#000000',scale:1.35,useCORS:true,logging:false,width:node.scrollWidth,height:node.scrollHeight,windowWidth:node.scrollWidth,windowHeight:node.scrollHeight}));}}finally{nodes.forEach(n=>n.remove());}
-    return canvases;
+function permanentlyEraseRecovery(recoveryId){if(currentUserRole!=='Owner'){alert('Only the Owner can permanently erase recovery records.');return;}const i=appData.recycleBin.findIndex(x=>x.id===recoveryId);if(i<0)return;if(!confirm('Permanently erase this recovery record? This cannot be undone.'))return;const label=appData.recycleBin[i].label;appData.recycleBin.splice(i,1);setSaveContext('Recovery record permanently erased','Recovery Center → Audit → Sync',label);saveState();}
+function renderRecoveryCenter(){const body=document.getElementById('recovery-table-body'),count=document.getElementById('recovery-count');if(count)count.textContent=`${appData.recycleBin.length} Item${appData.recycleBin.length===1?'':'s'}`;if(body)body.innerHTML=appData.recycleBin.length?appData.recycleBin.map(x=>`<tr><td>${escapeHTML(x.removedAt)}</td><td><span class="status-badge warning">${escapeHTML(x.type)}</span></td><td>${escapeHTML(x.label)}</td><td>${escapeHTML(x.removedBy)}</td><td><button class="btn btn-success btn-sm" onclick="recoverRecord('${x.id}')" ${currentUserRole==='Owner'?'':'disabled'}>♻ Recover</button> <button class="btn btn-danger btn-sm" onclick="permanentlyEraseRecovery('${x.id}')" ${currentUserRole==='Owner'?'':'disabled'}>Erase</button></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Recovery bin is empty.</td></tr>';}
+
+function openAddAssetPrompt(){const name=prompt('New asset name:');if(!name)return;const category=(prompt('Category: husky, compressor, cooling, or chiller','cooling')||'cooling').toLowerCase();const id=prompt('Unique asset ID:',`AST-${Date.now().toString().slice(-5)}`);if(!id||appData.assets.some(a=>a.id===id)){alert('Enter a unique asset ID.');return;}const specs=prompt('Asset specification / work description:','New plant asset')||'New plant asset';appData.assets.push({id,name:name.trim(),category:['husky','compressor','cooling','chiller'].includes(category)?category:'cooling',specs,status:'operational',note:'Added by '+currentUserName,motorPower:'Not specified',oilCapacity:'Not specified',isOn:false,description:'',descriptionEntries:[]});setSaveContext('New asset added','Asset Directory → Details → Exports → Sync',name);saveState();}
+function editSpareRecord(index){if(!ownerDeleteAllowed())return;const x=appData.spares[index];if(!x)return;x.desc=prompt('Spare description:',x.desc)||x.desc;x.asset=prompt('Target asset:',x.asset)||x.asset;x.stock=Math.max(0,Number(prompt('Stock quantity:',x.stock))||0);x.min=Math.max(0,Number(prompt('Minimum level:',x.min))||0);x.cost=prompt('Unit price:',x.cost)||x.cost;x.bin=prompt('Bin location:',x.bin)||x.bin;setSaveContext('Spare edited','Spares → Inventory → Sync',x.part);saveState();}
+function editToolRecord(index){if(!ownerDeleteAllowed())return;const x=appData.tools[index];if(!x)return;x.name=prompt('Tool name:',x.name)||x.name;x.cal=prompt('Calibration status:',x.cal)||x.cal;x.user=prompt('Location / holder:',x.user)||x.user;setSaveContext('Tool edited','Tools → Inventory → Sync',x.id);saveState();}
+function markInventoryDone(type,index){const x=type==='spare'?appData.spares[index]:appData.tools[index];if(!x)return;x.lastChecked=localTimestamp();x.checkedBy=currentUserName;setSaveContext(`${type} check done`,`${type==='spare'?'Spares':'Tools'} → Activity → Sync`,x.part||x.id);saveState();}
+function editWorkOrderRecord(id){if(!ownerDeleteAllowed())return;const x=appData.workOrders.find(w=>w.id===id);if(!x)return;x.desc=prompt('Work order description:',x.desc)||x.desc;x.priority=prompt('Priority: Low, Medium, High, Critical',x.priority)||x.priority;x.asset=prompt('Asset:',x.asset)||x.asset;setSaveContext('Work order edited','Work Orders → Activity → Sync',id);saveState();}
+function markArchiveDone(id){const x=appData.yearlyArchive.find(a=>a.id===id);if(!x)return;x.status='Completed';x.completedAt=localTimestamp();x.completedBy=currentUserName;setSaveContext('Log marked done','History → Activity → Sync',id);saveState();}
+function markAssetDone(id){const x=appData.assets.find(a=>a.id===id);if(!x)return;x.lastChecked=localTimestamp();x.checkedBy=currentUserName;x.status=x.status==='critical'?'warning':'operational';setSaveContext('Asset check marked done','Asset → Details → History → Sync',x.name);saveState();}
+function markStaffDutyDone(id){const x=appData.staff.find(s=>s.id===id);if(!x)return;if(currentUserRole!=='Owner'&&x.name!==currentUserName){alert('You can only complete your own duty record.');return;}x.lastDutyCompleted=localTimestamp();x.status='Duty Completed';setSaveContext('Employee duty marked done','Roster → Attendance → Activity → Sync',x.name);saveState();}
+
+function decorateFullActionButtons(){
+    document.querySelectorAll('#spares-table-body tr').forEach((row,i)=>{const cell=row.cells[row.cells.length-1];if(cell&&!cell.querySelector('.edit-spare'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-outline btn-sm edit-spare" onclick="editSpareRecord(${i})" ${currentUserRole==='Owner'?'':'disabled'}>Edit</button> <button class="btn btn-success btn-sm" onclick="markInventoryDone('spare',${i})">Done</button> `);});
+    document.querySelectorAll('#tools-table-body tr').forEach((row,i)=>{const cell=row.cells[row.cells.length-1];if(cell&&!cell.querySelector('.edit-tool'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-outline btn-sm edit-tool" onclick="editToolRecord(${i})" ${currentUserRole==='Owner'?'':'disabled'}>Edit</button> <button class="btn btn-success btn-sm" onclick="markInventoryDone('tool',${i})">Done</button> `);});
+    document.querySelectorAll('#work-orders-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim(),cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.edit-wo'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-outline btn-sm edit-wo" onclick="editWorkOrderRecord('${id}')" ${currentUserRole==='Owner'?'':'disabled'}>Edit</button> `);});
+    document.querySelectorAll('#staff-table-body tr').forEach(row=>{const id=row.cells[0]?.innerText.trim(),cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.staff-done'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-success btn-sm staff-done" onclick="markStaffDutyDone('${id}')">Done</button> `);});
+    ['#yearly-archive-body','#detail-history-body'].forEach(sel=>document.querySelectorAll(`${sel} tr`).forEach(row=>{const edit=row.querySelector('button[onclick*="openUniversalEditModal"]'),id=edit?.getAttribute('onclick')?.match(/archive'\s*,\s*'([^']+)'/)?.[1],cell=row.cells[row.cells.length-1];if(id&&cell&&!cell.querySelector('.done-log'))cell.insertAdjacentHTML('afterbegin',`<button class="btn btn-success btn-sm done-log" onclick="markArchiveDone('${id}')">Done</button> `);}));
+    const categories=[['home-husky-list','husky'],['home-compressor-list','compressor'],['home-cooling-list','cooling'],['home-chiller-list','chiller']];categories.forEach(([container,cat])=>{const assets=appData.assets.filter(a=>a.category===cat);document.querySelectorAll(`#${container} .asset-card-interactive`).forEach((card,i)=>{if(!card.querySelector('.asset-done-button')){const b=document.createElement('button');b.className='btn btn-success btn-sm asset-done-button';b.textContent='✓ Done';b.onclick=e=>{e.stopPropagation();markAssetDone(assets[i].id);};card.appendChild(b);}});});
 }
-function canvasBytes(canvas){const base64=canvas.toDataURL('image/png').split(',')[1],binary=atob(base64),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes;}
-function styleExcelDataSheet(sheet,rows){
-    const headers=orderedHeaders(rows);sheet.views=[{state:'frozen',ySplit:1}];sheet.autoFilter={from:{row:1,column:1},to:{row:Math.max(1,rows.length+1),column:Math.max(1,headers.length)}};
-    sheet.getRow(1).height=28;sheet.getRow(1).eachCell(cell=>{cell.font={bold:true,color:{argb:'FFF8FAFC'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2563EB'}};cell.alignment={vertical:'middle',horizontal:'left',wrapText:true};cell.border={bottom:{style:'thin',color:{argb:'FF60A5FA'}}};});
-    sheet.columns.forEach((column,index)=>{const key=headers[index];let width=Math.max(12,String(key||'').length+2);rows.forEach(row=>width=Math.max(width,Math.min(48,String(row[key]??'').length*.7+2)));column.width=Math.min(48,width);});
-    for(let r=2;r<=rows.length+1;r++){const row=sheet.getRow(r);row.alignment={vertical:'top',wrapText:true};row.eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:r%2?'FFF8FAFC':'FFEFF6FF'}};cell.border={bottom:{style:'hair',color:{argb:'FFCBD5E1'}},right:{style:'hair',color:{argb:'FFE2E8F0'}}};});}
+
+
+
+function completeAllFilterCleaning(){
+    const selects=[...document.querySelectorAll('#weekly-table-body .status-selector')];
+    if(!selects.length){installDetailedStatusSelectors();return setTimeout(completeAllFilterCleaning,50);}
+    selects.forEach((select,index)=>{if(!select.id)select.id=`wf-${index+1}`;select.value='OK';appData.maintenance.weeklyFilterStatuses[select.id]='OK';if(select.dataset.draftKey)appData.formDrafts[select.dataset.draftKey]='OK';styleStatusSelector(select);updateChecklistRow(select);const row=select.closest('tr');if(row?.cells[4])row.cells[4].innerHTML=`${localISODate()} (<strong style="color:var(--accent-success);">Cleaned today</strong>)`;});
+    appData.maintenance.weeklyDue=[];appData.maintenance.weeklyCompletedAt=localTimestamp();
+    appData.yearlyArchive.unshift({id:`ARCH-${Date.now()}`,date:localTimestamp(),shift:extractShiftName(document.getElementById('weekly-shift-select')?.value||'General Shift'),tech:currentUserName,asset:'Filtration & Strainer Circuit',type:'All Filter Cleaning Completed',desc:'Every weekly filter and strainer item was marked Clean / OK.',supv:currentUserRole==='Owner'?currentUserName:'Owner review available',status:'Completed'});
+    setSaveContext('All filter cleaning completed','Weekly Filters → Alarm Center → Home Alarm Button → History → Sync','All filter due alarms cleared.');saveState();renderAlarmCenter();alert('All filter-cleaning items are now OK. The filter due-date alarm has been cleared.');
 }
+
+const renderAllBeforeRecoveryActions=renderAll;
+renderAll=function(){renderAllBeforeRecoveryActions();renderRecoveryCenter();decorateRemoveControls();decorateFullActionButtons();bindWeeklyStatusPersistence();renderAlarmCenter();};
+renderAll();
+
+
+
+/* =========================================================
+   FINAL NATIVE-DATA EXPORTS — NO SCREENSHOTS
+   ========================================================= */
 exportRowsExcel=async function(name,inputRows){
-    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
-    const ready=await ensureExportLibrary(()=>!!window.ExcelJS,'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');if(!ready){return exportRowsCSV(name,rows);}
-    showSaveDestination('Preparing app-style Excel workbook…');const canvases=await captureVisualReport(name,rows);const workbook=new ExcelJS.Workbook();workbook.creator='PlantMaster Pro';workbook.created=new Date();
-    const visual=workbook.addWorksheet('Visual Report',{views:[{showGridLines:false}]});visual.getColumn(1).width=2;visual.getColumn(2).width=120;let visualRow=1;
-    canvases.forEach(canvas=>{const imageId=workbook.addImage({base64:canvas.toDataURL('image/png'),extension:'png'});const targetWidth=900,targetHeight=Math.round(canvas.height*(targetWidth/canvas.width));visual.addImage(imageId,{tl:{col:1,row:visualRow},ext:{width:targetWidth,height:targetHeight}});visualRow+=Math.ceil(targetHeight/20)+2;});
-    const dataSheet=workbook.addWorksheet('Structured Data');const headers=orderedHeaders(rows);dataSheet.addRow(headers);rows.forEach(row=>dataSheet.addRow(headers.map(h=>row[h]??'')));styleExcelDataSheet(dataSheet,rows);
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}const ready=await ensureExportLibrary(()=>!!window.ExcelJS,'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');if(!ready){alert('Excel library could not load.');return;}
+    const headers=orderedHeaders(rows),workbook=new ExcelJS.Workbook();workbook.creator='PlantMaster Pro';workbook.created=new Date();const sheet=workbook.addWorksheet(name.slice(0,31),{views:[{state:'frozen',ySplit:3}]});
+    sheet.mergeCells(1,1,1,Math.max(1,headers.length));sheet.getCell(1,1).value=`PlantMaster Pro — ${name}`;sheet.getCell(1,1).font={bold:true,size:16,color:{argb:'FFFFFFFF'}};sheet.getCell(1,1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F172A'}};sheet.getRow(1).height=30;
+    sheet.mergeCells(2,1,2,Math.max(1,headers.length));sheet.getCell(2,1).value=`Exported: ${localTimestamp()} • Complete records: ${rows.length}`;sheet.getCell(2,1).font={italic:true,color:{argb:'FF475569'}};
+    sheet.addRow(headers);rows.forEach(row=>sheet.addRow(headers.map(h=>row[h]??'')));const hr=sheet.getRow(3);hr.height=28;hr.eachCell(cell=>{cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2563EB'}};cell.alignment={wrapText:true,vertical:'middle'};cell.border={bottom:{style:'thin',color:{argb:'FF60A5FA'}}};});
+    sheet.columns.forEach((col,i)=>{const h=headers[i];let width=Math.max(12,String(h).length+2);rows.forEach(r=>width=Math.max(width,Math.min(55,String(r[h]??'').length*.75+2)));col.width=Math.min(55,width);});for(let r=4;r<=sheet.rowCount;r++){const row=sheet.getRow(r);row.alignment={wrapText:true,vertical:'top'};row.eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:r%2?'FFF8FAFC':'FFEFF6FF'}};cell.border={bottom:{style:'hair',color:{argb:'FFCBD5E1'}},right:{style:'hair',color:{argb:'FFE2E8F0'}}};});}
+    sheet.autoFilter={from:{row:3,column:1},to:{row:sheet.rowCount,column:headers.length}};sheet.pageSetup={orientation:headers.length>6?'landscape':'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:headers.length>8?9:9,margins:{left:.25,right:.25,top:.5,bottom:.5,header:.2,footer:.2}};sheet.headerFooter.oddHeader=`&C&BPlantMaster Pro — ${name}`;sheet.headerFooter.oddFooter='&L&D &T&CPage &P of &N&RPlantMaster Pro';
     const buffer=await workbook.xlsx.writeBuffer();downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`${safeFileName(name)}_${localISODate()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 };
 exportRowsWord=async function(name,inputRows){
-    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
-    const ready=await ensureExportLibrary(()=>!!window.docx,'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');if(!ready){alert('Word export library could not load.');return;}
-    showSaveDestination('Preparing app-style Word document…');const canvases=await captureVisualReport(name,rows),D=window.docx,children=[];
-    canvases.forEach((canvas,index)=>{const maxW=700,maxH=470,scale=Math.min(maxW/canvas.width,maxH/canvas.height);children.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.ImageRun({data:canvasBytes(canvas),transformation:{width:Math.round(canvas.width*scale),height:Math.round(canvas.height*scale)}})]}));if(index<canvases.length-1)children.push(new D.Paragraph({pageBreakBefore:true,text:''}));});
-    const documentFile=new D.Document({sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE},margin:{top:360,right:360,bottom:360,left:360}}},children}]});const blob=await D.Packer.toBlob(documentFile);downloadBlob(blob,`${safeFileName(name)}_${localISODate()}.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}const ready=await ensureExportLibrary(()=>!!window.docx,'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');if(!ready){alert('Word library could not load.');return;}
+    const D=window.docx,headers=orderedHeaders(rows),fontSize=headers.length>8?11:(headers.length>5?13:16);const tableRows=[new D.TableRow({tableHeader:true,cantSplit:true,children:headers.map(h=>new D.TableCell({shading:{fill:'2563EB'},children:[new D.Paragraph({children:[new D.TextRun({text:String(h),bold:true,color:'FFFFFF',size:fontSize})]})]}))}),...rows.map(row=>new D.TableRow({cantSplit:false,children:headers.map(h=>new D.TableCell({children:[new D.Paragraph({children:[new D.TextRun({text:String(row[h]??''),size:fontSize})]})]}))}))];
+    const children=[new D.Paragraph({text:`PlantMaster Pro — ${name}`,heading:D.HeadingLevel.TITLE}),new D.Paragraph({children:[new D.TextRun({text:`Exported: ${localTimestamp()} • Complete records: ${rows.length}`,italics:true,size:18})]}),new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},layout:D.TableLayoutType.FIXED,rows:tableRows})];
+    const documentFile=new D.Document({sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE},margin:{top:360,right:300,bottom:360,left:300}},titlePage:false},headers:{default:new D.Header({children:[new D.Paragraph({alignment:D.AlignmentType.RIGHT,children:[new D.TextRun({text:'PlantMaster Pro',bold:true,size:16})]})]})},footers:{default:new D.Footer({children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.TextRun('PlantMaster Pro • Structured plant record') ]})]})},children}]});
+    const blob=await D.Packer.toBlob(documentFile);downloadBlob(blob,`${safeFileName(name)}_${localISODate()}.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 };
 exportRowsPDF=async function(name,inputRows){
-    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}
-    const ready=await ensureExportLibrary(()=>!!window.jspdf?.jsPDF,'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');if(!ready){alert('PDF export library could not load.');return;}
-    showSaveDestination('Preparing app-style PDF…');const canvases=await captureVisualReport(name,rows),doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'}),pageW=841.89,pageH=595.28,margin=18;
-    canvases.forEach((canvas,index)=>{if(index)doc.addPage('a4','landscape');const scale=Math.min((pageW-margin*2)/canvas.width,(pageH-margin*2)/canvas.height),w=canvas.width*scale,h=canvas.height*scale;doc.addImage(canvas.toDataURL('image/png'),'PNG',(pageW-w)/2,(pageH-h)/2,w,h,'','FAST');doc.setFontSize(7);doc.setTextColor(180);doc.text(`Page ${index+1} of ${canvases.length}`,pageW-70,pageH-7);});doc.save(`${safeFileName(name)}_${localISODate()}.pdf`);
+    const rows=cleanRows(inputRows);if(!rows.length){alert(`No ${name} data is available to export.`);return;}const ready=await ensureExportLibrary(()=>!!window.jspdf?.jsPDF,'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');if(!ready){alert('PDF library could not load.');return;}if(!window.jspdf.jsPDF.API.autoTable)await ensureExportLibrary(()=>!!window.jspdf.jsPDF.API.autoTable,'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+    const headers=orderedHeaders(rows),wide=headers.length>6;const doc=new window.jspdf.jsPDF({orientation:wide?'landscape':'portrait',unit:'pt',format:wide?'a3':'a4'});doc.setProperties({title:name,author:'PlantMaster Pro',subject:'Complete structured plant data'});doc.setFontSize(15);doc.text(`PlantMaster Pro — ${name}`,24,28);doc.setFontSize(8);doc.text(`Exported: ${localTimestamp()} • Complete records: ${rows.length}`,24,42);
+    doc.autoTable({startY:50,head:[headers],body:rows.map(row=>headers.map(h=>String(row[h]??''))),theme:'grid',styles:{fontSize:headers.length>9?5.2:(headers.length>6?6:7),cellPadding:2,overflow:'linebreak',valign:'top',lineColor:[203,213,225],lineWidth:.25},headStyles:{fillColor:[37,99,235],textColor:[255,255,255],fontStyle:'bold'},alternateRowStyles:{fillColor:[239,246,255]},showHead:'everyPage',rowPageBreak:'avoid',margin:{top:26,left:18,right:18,bottom:26}});
+    const pages=doc.getNumberOfPages();for(let page=1;page<=pages;page++){doc.setPage(page);doc.setFontSize(7);doc.setTextColor(90);doc.text(`${name} • Page ${page} of ${pages}`,24,doc.internal.pageSize.height-10);}doc.save(`${safeFileName(name)}_${localISODate()}.pdf`);
 };
 
 
 
-async function downloadAllMergedExcel(){
-    const sheets=typeof allMergedSheets==='function'?allMergedSheets():{};const ready=await ensureExportLibrary(()=>!!window.ExcelJS,'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');if(!ready){alert('Excel rendering library could not load.');return;}
-    showSaveDestination('Preparing fitted multi-sheet Excel workbook…');const workbook=new ExcelJS.Workbook();workbook.creator='PlantMaster Pro';workbook.created=new Date();
-    Object.entries(sheets).forEach(([name,inputRows])=>{const rows=cleanRows(inputRows),headers=orderedHeaders(rows),sheet=workbook.addWorksheet(name.slice(0,31),{views:[{state:'frozen',ySplit:3}]});sheet.mergeCells(1,1,1,Math.max(1,headers.length));const title=sheet.getCell(1,1);title.value=`PlantMaster Pro — ${name}`;title.font={bold:true,size:16,color:{argb:'FFFFFFFF'}};title.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0F172A'}};title.alignment={vertical:'middle'};sheet.getRow(1).height=30;sheet.mergeCells(2,1,2,Math.max(1,headers.length));sheet.getCell(2,1).value=`Exported ${localTimestamp()} • ${rows.length} record(s)`;sheet.getCell(2,1).font={italic:true,color:{argb:'FF475569'}};sheet.addRow(headers.length?headers:['Message']);if(rows.length)rows.forEach(row=>sheet.addRow(headers.map(h=>row[h]??'')));else sheet.addRow(['No records']);const headerRow=sheet.getRow(3);headerRow.eachCell(cell=>{cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2563EB'}};cell.alignment={wrapText:true,vertical:'middle'};});sheet.columns.forEach((col,i)=>{const h=headers[i]||'Message';let width=Math.max(12,h.length+2);rows.forEach(r=>width=Math.max(width,Math.min(48,String(r[h]??'').length*.7+2)));col.width=Math.min(48,width);});for(let r=4;r<=sheet.rowCount;r++){sheet.getRow(r).alignment={wrapText:true,vertical:'top'};sheet.getRow(r).eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:r%2?'FFF8FAFC':'FFEFF6FF'}};cell.border={bottom:{style:'hair',color:{argb:'FFCBD5E1'}}};});}if(headers.length)sheet.autoFilter={from:{row:3,column:1},to:{row:Math.max(3,sheet.rowCount),column:headers.length}};});
-    const buffer=await workbook.xlsx.writeBuffer();downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`PlantMaster_All_Merged_Data_${localISODate()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-}
-
-const renderAllBeforeAssetAlarmFilterFinal=renderAll;
-renderAll=function(){renderAllBeforeAssetAlarmFilterFinal();bindWeeklyStatusPersistence();decorateRemoveControls();renderAlarmCenter();};
-document.addEventListener('DOMContentLoaded',()=>{bindWeeklyStatusPersistence();renderAlarmCenter();});
-renderAll();
+renderedTableRows=function(table){
+    const headers=[...table.querySelectorAll('thead th')].map(x=>x.innerText.trim());
+    return [...table.querySelectorAll('tbody tr')].filter(row=>row.style.display!=='none').map(row=>{const record={};[...row.cells].forEach((cell,index)=>{const controls=[...cell.querySelectorAll('input,select,textarea')].map(el=>el.type==='checkbox'?(el.checked?'Checked':'Not checked'):el.value).filter(Boolean);const visible=[...cell.childNodes].filter(node=>!(node.nodeType===1&&['BUTTON','SELECT','INPUT','TEXTAREA'].includes(node.tagName))).map(node=>node.textContent||'').join(' ').replace(/\s+/g,' ').trim();record[headers[index]||`Column ${index+1}`]=[visible,...controls].filter(Boolean).join(' | ');});return record;});
+};
 
 </script>
 <div id="save-destination-toast" class="save-destination-toast" role="status" aria-live="polite"></div>
