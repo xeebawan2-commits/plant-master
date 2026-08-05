@@ -39,3 +39,7 @@ The supplied Supabase URL and publishable key are preconfigured in `index.html`.
 ## Updating the app
 
 Change `CACHE_VERSION` in `service-worker.js` whenever deploying a new release, for example from `plantmaster-pro-v1.0.0` to `plantmaster-pro-v1.0.1`. This causes old app-shell files to be replaced.
+
+## QR camera and media files
+
+The live QR camera requires the deployed HTTPS URL and camera permission. Images/documents save offline in IndexedDB. Run the SQL in `MEDIA-SETUP.md` to synchronize original files through Supabase Storage across devices.
